@@ -53,6 +53,8 @@ extensions = [
     #'sphinx.ext.mathjax',
     
     #'sphinx.ext.coverage',
+    
+    'enum_tools.autoenum',
     ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -79,8 +81,14 @@ master_doc = 'index'
 #
 html_theme = 'furo'
 
+
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-#html_static_path = ['_static']
-html_static_path = []
+html_static_path = ["_static"]
+html_theme_options = {
+    "light_logo": "AxisVM_logo_light.png",
+    "dark_logo": "AxisVM_logo_dark.png",
+}
+
+html_title = "PyAxisVM"

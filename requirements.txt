@@ -1,6 +1,6 @@
 setuptools
 wheel
 pywin32
-dewloosh.core
+#dewloosh.core
 comtypes==1.1.11
 numpy

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-from dewloosh.core.abc.wrap import Wrapper
+from dewloosh.core.wrapping import Wrapper
 from typing import Callable, Iterable, Any
 
 
-__all__ = ['AxWrapper']
+__all__ = ['AxWrapper', 'AxisVMModelItem', 'AxisVMModelItems']
 
 
 NoneType = type(None)
@@ -78,11 +78,7 @@ class AxWrapper(Wrapper):
     def __getitem__(self, ind):
         if self.__has_items:
             cls = AxWrapper if self.__itemcls__ is None else self.__itemcls__
-            if isinstance(ind, int):
-                if ind < 0:
-                    ind = self._wrapped.Count + 1 + ind
-                return cls(wrap=self._wrapped.Item[ind])
-            elif isinstance(ind, slice):
+            if isinstance(ind, slice):
                 axobj = self._wrapped
                 item = lambda i : cls(wrap=axobj.Item[i], parent=self)
                 start, stop, step = ind.start, ind.stop, ind.step
@@ -106,7 +102,9 @@ class AxWrapper(Wrapper):
                     return res[0]
                 return AxItemCollection(res)
             else:
-                raise NotImplementedError
+                if ind < 0:
+                    ind = self._wrapped.Count + 1 + ind
+                return cls(wrap=self._wrapped.Item[ind], parent=self)
         else:            
             try:
                 return super().__getitem__(ind)
@@ -117,3 +115,111 @@ class AxWrapper(Wrapper):
                     raise TypeError("'{}' object is not "
                                     "subscriptable".format(
                                         self.__class__.__name__))
+                    
+    def _get_attrs(self):
+        """Return the representation methods (internal helper)."""
+        return []
+
+    def head(self, display=True, html: bool = None):
+        """Return the header stats of this dataset.
+
+        If in IPython, this will be formatted to HTML. Otherwise
+        returns a console friendly string.
+
+        Parameters
+        ----------
+        display : bool, optional
+            Display this header in iPython.
+
+        html : bool, optional
+            Generate the output as HTML.
+
+        Returns
+        -------
+        str
+            Header statistics.
+
+        """
+        # Generate the output
+        attrs = self._get_attrs()
+        if len(attrs) == 0:
+            return type(self).__name__
+        if html:
+            fmt = ""
+            # HTML version
+            fmt += "\n"
+            fmt += "<table>\n"
+            fmt += f"<tr><th>{type(self).__name__}</th><th>Information</th></tr>\n"
+            row = "<tr><td>{}</td><td>{}</td></tr>\n"
+            # now make a call on the object to get its attributes as a list of len 2 tuples
+            for attr in attrs:
+                try:
+                    fmt += row.format(attr[0], attr[2].format(attr[1]))
+                except Exception:
+                    pass
+            fmt += "</table>\n"
+            fmt += "\n"
+            if display:
+                from IPython.display import HTML, display as _display
+                _display(HTML(fmt))
+                return
+            return fmt
+        # Otherwise return a string that is Python console friendly
+        fmt = f"{type(self).__name__} ({hex(id(self))})\n"
+        # now make a call on the object to get its attributes as a list of len 2 tuples
+        row = "  {}:\t{}\n"
+        for attr in attrs:
+            try:
+                fmt += row.format(attr[0], attr[2].format(*attr[1]))
+            except:
+                fmt += row.format(attr[0], attr[2].format(attr[1]))
+        return fmt
+
+    def _repr_html_(self) -> str:
+        """
+        Return a pretty representation for Jupyter notebooks.
+
+        It includes header details and information about all arrays.
+
+        """
+        return self.head(display=False, html=True)
+
+    def __repr__(self) -> str:
+        """Return the object representation."""
+        return self.head(display=False, html=False)
+
+    def __str__(self) -> str:
+        """Return the object string representation."""
+        return self.head(display=False, html=False)
+                    
+
+class AxisVMModelItem(AxWrapper):
+    """
+    Base wrapper class for interfaces of items, such as individual
+    lines, surfaces, etc.
+     
+    """
+
+    def __init__(self, *args, parent=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.parent = parent
+
+    @property
+    def model(self):
+        return self.parent.model
+    
+    @property
+    def Index(self):
+        return self.parent.IndexOfUID[self.UID]
+
+
+class AxisVMModelItems(AxWrapper):
+    """
+    Base wrapper class for interfaces of containers of items, such as 
+    collections of lines, surfaces, etc.
+     
+    """
+
+    def __init__(self, *args, model=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.model = model

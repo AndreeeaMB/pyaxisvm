@@ -16,7 +16,8 @@ def find_axisvm_tlb():
 
 
 def wrap_axisvm_tlb(tlbid=None, major=None, minor=None):
-    """Returns the wrapped AxisVM type library as a python module.
+    """
+    Returns the wrapped AxisVM type library as a python module.
     The library to wrap can be specified by Id, minor and major 
     version numbers, but all three must be provided to have a 
     complete specification. Otherwise, the function returns a python
@@ -27,15 +28,15 @@ def wrap_axisvm_tlb(tlbid=None, major=None, minor=None):
     ----------
         tlbid : str, optional
             Id of the type library to wrap. 
-            The defaut is None.
+            Defaut is None.
 
         major : int, optional
-            Major version number of the type library to wrap
-            The defaut is None.
+            Major version number of the type library to wrap.
+            Defaut is None.
 
         minor : int, optional
-            Minor version number of the type library to wrap
-            The defaut is None.
+            Minor version number of the type library to wrap.
+            Defaut is None.
 
     Example
     -------
@@ -50,6 +51,7 @@ def wrap_axisvm_tlb(tlbid=None, major=None, minor=None):
     -------
         module
             The wrapped AxisVM type library as a python module.
+            
     """
     from comtypes import client as cc   
     if tlbid is None or major is None or minor is None:

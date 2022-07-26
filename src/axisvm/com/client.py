@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from time import sleep
-from axisvm.com.axapp import AxApp
+
+from .axapp import IAxisVMApplication as AxApp
 
 
 __all__ = ['start_AxisVM']
