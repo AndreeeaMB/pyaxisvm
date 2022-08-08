@@ -3,19 +3,20 @@ import numpy as np
 import awkward as ak
 from numpy import ndarray as Array
 from typing import Iterable
+from functools import partial
 
 import awkward as ak
 
-from dewloosh.mesh.topo import TopologyArray, unique_topo_data
-from dewloosh.mesh.topo.tr import Q8_to_T3, T6_to_T3
-from dewloosh.mesh.topo.topodata import edges_Q4
-from dewloosh.mesh.tri.triutils import edges_tri
-from dewloosh.mesh.plotting.plotly import plot_triangles_3d
-from dewloosh.mesh.topo import detach as detach_mesh
+from sigmaepsilon.mesh.topo import TopologyArray, unique_topo_data
+from sigmaepsilon.mesh.topo.topodata import edges_Q4
+from sigmaepsilon.mesh.tri.triutils import edges_tri
+from sigmaepsilon.mesh.plotting.plotly import plot_triangles_3d
+from sigmaepsilon.mesh.topo import detach as detach_mesh
 
 import axisvm
 from .core.wrap import AxisVMModelItem, AxisVMModelItems
-from .core.utils import RMatrix3x3toNumPy, triangulate
+from .core.utils import (RMatrix3x3toNumPy, triangulate, RSurfaceForces2list, 
+                         RSurfaceStresses2list)
 from .attr import AxisVMAttributes
 
 surfacetype_to_str = {
@@ -304,6 +305,103 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
         s = self._wrapped
         rec = list(map(lambda i: s.Item[i].GetTrMatrix()[0], inds))
         return np.array(list(map(RMatrix3x3toNumPy, rec)), dtype=float)
+    
+    def generalized_surface_forces(self, *args, case=None, combination=None,
+                                   DisplacementSystem=None, LoadCaseId=None,
+                                   LoadLevelOrModeShapeOrTimeStep=None, 
+                                   LoadCombinationId=None,**kwargs):
+        axm = self.model
+        if case is not None:
+            LoadCombinationId = None
+            if isinstance(case, str):
+                LoadCases = axm.LoadCases
+                imap = {LoadCases.Name[i]: i for i in range(
+                    1, LoadCases.Count+1)}
+                if case in imap:
+                    LoadCaseId = imap[case]
+                else:
+                    raise KeyError("Unknown case with name '{}'".format(case))
+            elif isinstance(case, int):
+                LoadCaseId = case
+        elif combination is not None:
+            LoadCaseId = None
+            if isinstance(combination, str):
+                LoadCombinations = axm.LoadCombinations
+                imap = {LoadCombinations.Name[i]: i for i in range(
+                    1, LoadCombinations.Count+1)}
+                if combination in imap:
+                    LoadCombinationId = imap[combination]
+                else:
+                    raise KeyError(
+                        "Unknown combination with name '{}'".format(combination))
+            elif isinstance(combination, int):
+                LoadCombinationId = combination
+        forces = axm.Results.Forces
+        if DisplacementSystem is None:
+            DisplacementSystem = 1  # global
+        if isinstance(DisplacementSystem, int):
+            forces.DisplacementSystem = DisplacementSystem
+        if LoadCaseId is not None:
+            forces.LoadCaseId = LoadCaseId
+        if LoadCombinationId is not None:
+            forces.LoadCombinationId = LoadCombinationId
+        if LoadLevelOrModeShapeOrTimeStep is None:
+            LoadLevelOrModeShapeOrTimeStep = 1
+        forces.LoadLevelOrModeShapeOrTimeStep = LoadLevelOrModeShapeOrTimeStep
+        if LoadCaseId is not None:
+            recs = forces.AllSurfaceForcesByLoadCaseId()[0]
+        elif LoadCombinationId is not None:
+            recs = forces.AllSurfaceForcesByLoadCombinationId()[0]
+        return ak.Array(list(map(RSurfaceForces2list, recs)))
+    
+    def surface_stresses(self, *args, case=None, combination=None,
+                         DisplacementSystem=None, LoadCaseId=None,
+                         LoadLevelOrModeShapeOrTimeStep=None, 
+                         LoadCombinationId=None, z='m', **kwargs):
+        axm = self.model
+        if case is not None:
+            LoadCombinationId = None
+            if isinstance(case, str):
+                LoadCases = axm.LoadCases
+                imap = {LoadCases.Name[i]: i for i in range(
+                    1, LoadCases.Count+1)}
+                if case in imap:
+                    LoadCaseId = imap[case]
+                else:
+                    raise KeyError("Unknown case with name '{}'".format(case))
+            elif isinstance(case, int):
+                LoadCaseId = case
+        elif combination is not None:
+            LoadCaseId = None
+            if isinstance(combination, str):
+                LoadCombinations = axm.LoadCombinations
+                imap = {LoadCombinations.Name[i]: i for i in range(
+                    1, LoadCombinations.Count+1)}
+                if combination in imap:
+                    LoadCombinationId = imap[combination]
+                else:
+                    raise KeyError(
+                        "Unknown combination with name '{}'".format(combination))
+            elif isinstance(combination, int):
+                LoadCombinationId = combination
+        resobj = axm.Results.Stresses
+        if DisplacementSystem is None:
+            DisplacementSystem = 1  # global
+        if isinstance(DisplacementSystem, int):
+            resobj.DisplacementSystem = DisplacementSystem
+        if LoadCaseId is not None:
+            resobj.LoadCaseId = LoadCaseId
+        if LoadCombinationId is not None:
+            resobj.LoadCombinationId = LoadCombinationId
+        if LoadLevelOrModeShapeOrTimeStep is None:
+            LoadLevelOrModeShapeOrTimeStep = 1
+        resobj.LoadLevelOrModeShapeOrTimeStep = LoadLevelOrModeShapeOrTimeStep
+        if LoadCaseId is not None:
+            recs = resobj.AllSurfaceStressesByLoadCaseId()[0]
+        elif LoadCombinationId is not None:
+            recs = resobj.AllSurfaceStressesByLoadCombinationId()[0]
+        foo = partial(RSurfaceStresses2list, mode=z)
+        return ak.Array(list(map(foo, recs)))
 
     def _get_attrs(self) -> Iterable:
         """Return the representation methods (internal helper)."""

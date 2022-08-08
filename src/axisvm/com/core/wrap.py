@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from dewloosh.core.wrapping import Wrapper
+from sigmaepsilon.core.wrapping import Wrapper
 from typing import Callable, Iterable, Any
 
 
@@ -29,6 +29,7 @@ class AxItemCollection(list):
 class AxWrapper(Wrapper):
 
     __itemcls__ = None
+    __collectioncls__ = None
     
     def __init__(self, *args, **kwargs):
         self.__has_items = False
@@ -78,6 +79,8 @@ class AxWrapper(Wrapper):
     def __getitem__(self, ind):
         if self.__has_items:
             cls = AxWrapper if self.__itemcls__ is None else self.__itemcls__
+            ccls = AxItemCollection if self.__collectioncls__ is None \
+                else self.__collectioncls__
             if isinstance(ind, slice):
                 axobj = self._wrapped
                 item = lambda i : cls(wrap=axobj.Item[i], parent=self)
@@ -93,14 +96,14 @@ class AxWrapper(Wrapper):
                 res = list(map(item, inds))
                 if len(res) == 1:
                     return res[0]
-                return AxItemCollection(res)
+                return ccls(res)
             elif isinstance(ind, Iterable):
                 axobj = self._wrapped
                 item = lambda i : cls(wrap=axobj.Item[i], parent=self)
                 res = [item(i) for i in ind]
                 if len(res) == 1:
                     return res[0]
-                return AxItemCollection(res)
+                return ccls(res)
             else:
                 if ind < 0:
                     ind = self._wrapped.Count + 1 + ind
@@ -223,3 +226,7 @@ class AxisVMModelItems(AxWrapper):
     def __init__(self, *args, model=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.model = model
+        
+    @property
+    def Items(self):
+        return map(lambda i : self[i+1], range(self.Count))

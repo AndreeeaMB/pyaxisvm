@@ -137,6 +137,26 @@ def _download_and_read(filename):
 ###############################################################################
 
 
+def download_tetrahedra():  # pragma: no cover
+    """
+    Downloads an AxisVM model file with a grid of beams.
+
+    Returns
+    -------
+    str
+        A path to an AxisVM model file on your filesystem.
+
+    Example
+    --------
+    >>> from axisvm.com.client import start_AxisVM
+    >>> from axisvm import examples
+    >>> axvm = start_AxisVM(visible=True, daemon=True)
+    >>> axvm.model = examples.download_tetrahedra()
+    
+    """
+    return _download_and_read('tetrahedra_vX5r4.axs')
+
+
 def download_bernoulli_grid():  # pragma: no cover
     """
     Downloads an AxisVM model file with a grid of beams.
@@ -155,6 +175,60 @@ def download_bernoulli_grid():  # pragma: no cover
     
     """
     return _download_and_read('console_H8_L2_v13r3.axs')
+
+
+def download_stem_stl():  # pragma: no cover
+    """
+    Downloads an stl file describing a stem.
+
+    Returns
+    -------
+    str
+        A path to an stl file on your filesystem.
+
+    Example
+    --------
+    >>> from axisvm import examples
+    >>> examples.download_stem_stl()
+    
+    """
+    return _download_and_read('stem.stl')
+
+
+def download_stand_vtk():  # pragma: no cover
+    """
+    Downloads a vtk file describing a stem.
+
+    Returns
+    -------
+    str
+        A path to a vtk file on your filesystem.
+
+    Example
+    --------
+    >>> from axisvm import examples
+    >>> examples.download_stand_vtk()
+    
+    """
+    return _download_and_read('stand.vtk')
+
+
+def download_stand_stl():  # pragma: no cover
+    """
+    Downloads an stl file describing a simple stand.
+
+    Returns
+    -------
+    str
+        A path to an stl file on your filesystem.
+
+    Example
+    --------
+    >>> from axisvm import examples
+    >>> examples.download_stand_stl()
+    
+    """
+    return _download_and_read('stand.stl')
 
 
 def download_sample_001():  # pragma: no cover

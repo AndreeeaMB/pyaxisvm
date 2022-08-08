@@ -1,19 +1,20 @@
 # -*- coding: utf-8 -*-
-from collections import Iterable
-
 import numpy as np
 
-from dewloosh.mesh import PointCloud, CartesianFrame
-from dewloosh.mesh.topo import TopologyArray
+from sigmaepsilon.mesh import PointCloud, CartesianFrame
+from sigmaepsilon.mesh.topo import TopologyArray
 
-import axisvm
 from .core.wrap import AxWrapper, AxisVMModelItems
 from .core.utils import RDisplacementValues2list
+
+from .axnode import IAxisVMNodes
 from .axdomain import IAxisVMDomains
 from .axmember import IAxisVMMembers
 from .axsurface import IAxisVMSurfaces
 from .axline import IAxisVMLines
 from .axwindow import IAxisVMWindows
+from .axresult import IAxisVMResults
+from .axmaterial import IAxisVMMaterials
 
 
 __all__ = ['IAxisVMModels', 'IAxisVMModel']
@@ -51,13 +52,21 @@ class IAxisVMModel(AxWrapper):
         self.parent = parent
 
     @property
+    def Nodes(self) -> IAxisVMNodes:
+        return IAxisVMNodes(model=self, wrap=self._wrapped.Nodes)
+
+    @property
     def Members(self) -> IAxisVMMembers:
         return IAxisVMMembers(model=self, wrap=self._wrapped.Members)
 
     @property
     def Domains(self) -> IAxisVMDomains:
         return IAxisVMDomains(model=self, wrap=self._wrapped.Domains)
-
+    
+    @property
+    def XLAMDomains(self):
+        return list(self.Domains.XLAMItems)
+    
     @property
     def Lines(self) -> IAxisVMLines:
         return IAxisVMLines(model=self, wrap=self._wrapped.Lines)
@@ -69,10 +78,18 @@ class IAxisVMModel(AxWrapper):
     @property
     def Windows(self) -> IAxisVMWindows:
         return IAxisVMWindows(model=self, wrap=self._wrapped.Windows)
+    
+    @property
+    def Results(self) -> IAxisVMResults:
+        return IAxisVMResults(model=self, wrap=self._wrapped.Results)
 
     @property
     def Calculation(self) -> IAxisVMCalculation:
         return IAxisVMCalculation(model=self, wrap=self._wrapped.Calculation)
+    
+    @property
+    def Materials(self) -> IAxisVMMaterials:
+        return IAxisVMMaterials(model=self, wrap=self._wrapped.Materials)
 
     @property
     def MeshSurfaceIds(self):
@@ -128,15 +145,58 @@ class IAxisVMModel(AxWrapper):
         if len(res) >= 2:
             return np.vstack(res)
         return res[0] if len(res) == 1 else None
-    
-    def dof_solution(self, DisplacementSystem=1, LoadCaseId=1, 
-                     LoadLevelOrModeShapeOrTimeStep=1):
+
+    def dof_solution(self, *args, DisplacementSystem=None, LoadCaseId=None,
+                     LoadLevelOrModeShapeOrTimeStep=None, LoadCombinationId=None,
+                     case=None, combination=None, **kwargs):
+        if case is not None:
+            LoadCombinationId = None
+            if isinstance(case, str):
+                LoadCases = self.LoadCases
+                imap = {LoadCases.Name[i]: i for i in range(
+                    1, LoadCases.Count+1)}
+                if case in imap:
+                    LoadCaseId = imap[case]
+                else:
+                    raise KeyError("Unknown case with name '{}'".format(case))
+            elif isinstance(case, int):
+                LoadCaseId = case
+        elif combination is not None:
+            LoadCaseId = None
+            if isinstance(combination, str):
+                LoadCombinations = self.LoadCombinations
+                imap = {LoadCombinations.Name[i]: i for i in range(
+                    1, LoadCombinations.Count+1)}
+                if combination in imap:
+                    LoadCombinationId = imap[combination]
+                else:
+                    raise KeyError(
+                        "Unknown combination with name '{}'".format(combination))
+            elif isinstance(combination, int):
+                LoadCombinationId = combination
         disps = self.Results.Displacements
-        disps.DisplacementSystem = DisplacementSystem
-        disps.LoadCaseId = LoadCaseId
+        if DisplacementSystem is None:
+            DisplacementSystem = 1  # global
+        if isinstance(DisplacementSystem, int):
+            disps.DisplacementSystem = DisplacementSystem
+        if LoadCaseId is not None:
+            disps.LoadCaseId = LoadCaseId
+        if LoadCombinationId is not None:
+            disps.LoadCombinationId = LoadCombinationId
+        if LoadLevelOrModeShapeOrTimeStep is None:
+            LoadLevelOrModeShapeOrTimeStep = 1
         disps.LoadLevelOrModeShapeOrTimeStep = LoadLevelOrModeShapeOrTimeStep
-        recs = disps.AllNodalDisplacementsByLoadCaseId()[0]
+        if LoadCaseId is not None:
+            recs = disps.AllNodalDisplacementsByLoadCaseId()[0]
+        elif LoadCombinationId is not None:
+            recs = disps.AllNodalDisplacementsByLoadCombinationId()[0]
         return np.array(list(map(RDisplacementValues2list, recs)))
+
+    def generalized_surface_forces(self, *args, **kwargs):
+        return self.Surfaces.generalized_surface_forces(*args, **kwargs)
+        
+    def surface_stresses(self, *args, **kwargs):
+        return self.Surfaces.surface_stresses(*args, **kwargs)
 
     def __enter__(self):
         if self._wrapped is not None:
