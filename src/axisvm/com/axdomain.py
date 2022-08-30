@@ -8,6 +8,7 @@ from numpy import ndarray as Array
 
 import matplotlib.tri as tri
 
+from sigmaepsilon.core import issequence
 from sigmaepsilon.core.tools import float_to_str_sig
 
 from sigmaepsilon.math.linalg import Vector
@@ -16,6 +17,7 @@ from sigmaepsilon.mesh import PointCloud, CartesianFrame
 from sigmaepsilon.mesh.tri import triplot
 from sigmaepsilon.mesh.topo import TopologyArray, rewire
 from sigmaepsilon.mesh.utils import decompose
+from sigmaepsilon.math.linalg.sparse.utils import count_cols
 
 import axisvm
 from .core.wrap import AxisVMModelItem, AxisVMModelItems, AxItemCollection
@@ -23,9 +25,9 @@ from .core.utils import (RMatrix3x3toNumPy, RMatrix2x2toNumPy,
                          RSurfaceCoordinates2list, triangulate as triang,
                          dcomp2int, fcomp2int, scomp2int, xlmscomp2int,
                          RXLAMSurfaceStresses2list, RSurfaceStresses2list,
-                         get_xlam_strs_case, get_xlam_strs_comb, get_xsev,
+                         get_xlam_strs_case, get_xlam_strs_comb,
                          get_xlam_effs_crit, RXLAMSurfaceEfficiencies2list)
-from .attr import AxisVMAttributes
+from .attr import AxisVMAttributes, squeeze_attributes as dsqueeze
 from .axsurface import SurfaceMixin, get_surface_attributes, surface_attr_fields
 
 
@@ -33,18 +35,19 @@ __all__ = ['IAxisVMDomain', 'IAxisVMDomains']
 
 
 class AxDomainCollection(AxItemCollection):
-    
+
     def __getattribute__(self, attr):
         if hasattr(self[0], attr):
             _attr = getattr(self[0], attr)
             if isinstance(_attr, Callable):
-                getter = lambda i : getattr(i, attr)
+                def getter(i): return getattr(i, attr)
                 funcs = map(getter, self)
+
                 def inner(*args, **kwargs):
-                    return list(map(lambda f : f(*args, **kwargs), funcs)) 
+                    return list(map(lambda f: f(*args, **kwargs), funcs))
                 return inner
             else:
-                return list(map(lambda i : getattr(i, attr), self)) 
+                return list(map(lambda i: getattr(i, attr), self))
         else:
             return super().__getattribute__(attr)
 
@@ -58,11 +61,11 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
 
     @property
     def attributes(self):
-        return self.parent.get_attributes(self.Index)
+        return dsqueeze(self.parent.get_attributes(i=self.Index))
 
     @property
     def domain_attributes(self):
-        return self.parent.get_domain_attributes(self.Index)
+        return dsqueeze(self.parent.get_domain_attributes(i=self.Index))
 
     @property
     def tr(self):
@@ -170,11 +173,10 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
             dofsol[:, :3] = Vector(dofsol[:, :3], frame=source).show(target)
             dofsol[:, 3:6] = Vector(dofsol[:, 3:6], frame=source).show(target)
         i = dcomp2int(component)
-        min, max = minmax(dofsol[:, i])
-        def f2str(f): return float_to_str_sig(f, sig=3)
+        #min, max = minmax(dofsol[:, i])
         compstr = component.upper()
-        params = [self.Index, compstr, f2str(min), f2str(max)]
-        tmpl = "| Domain {} | {} | ${}$ | ${}$ |"
+        params = [self.Index, compstr]
+        tmpl = "Domain {} - {}"
         mpl_kw['title'] = tmpl.format(*params)
         triplot(triobj, data=dofsol[:, i], **mpl_kw)
 
@@ -192,11 +194,10 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
                           offset=0., cbpad='10%', cbsize='10%',
                           cbpos='right')
         i = fcomp2int(component)
-        min, max = minmax(forces[:, :3, i])
-        def f2str(f): return float_to_str_sig(f, sig=3)
+        #min, max = minmax(forces[:, :3, i])
         compstr = component.upper()
-        params = [self.Index, compstr, f2str(min), f2str(max)]
-        tmpl = "| Domain {} | {} | ${}$ | ${}$ |"
+        params = [self.Index, compstr]
+        tmpl = "Domain {} - {}"
         mpl_kw['title'] = tmpl.format(*params)
         triplot(triobj, data=forces[:, :3, i], **mpl_kw)
 
@@ -217,11 +218,10 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         else:
             c = component if component is not None else 'sxx'
             ci = scomp2int(c)
-        min, max = minmax(stresses[:, :3, ci])
-        def f2str(f): return float_to_str_sig(f, sig=3)
+        #min, max = minmax(stresses[:, :3, ci])
         compstr = component.upper()
-        params = [self.Index, compstr, z.lower(), f2str(min), f2str(max)]
-        tmpl = "| Domain {} | {}_{} | ${}$ | ${}$ |"
+        params = [self.Index, compstr, z.lower()]
+        tmpl = "Domain {} - {} - {}"
         mpl_kw['title'] = tmpl.format(*params)
         triplot(triobj, data=stresses[:, :3, ci], **mpl_kw)
 
@@ -262,8 +262,39 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
     def xlam_surface_stresses(self, case=None, combination=None,
                               LoadCaseId=None, LoadCombinationId=None,
                               DisplacementSystem=0, LoadLevelOrModeShapeOrTimeStep=1,
-                              AnalysisType=0):
+                              AnalysisType=0, frmt='array', factor=None):
         assert self.IsXLAM, "This is not an XLAM domain!"
+        
+        def ak2np(r, i): return ak.flatten(r[:, :, i]).to_numpy()
+        def ad2d(arr): return {i: ak2np(arr, i) for i in range(13)}
+        
+        if issequence(case):
+            if factor is not None:
+                assert issequence(factor), \
+                    "If 'case' is an Iterable, 'factor' must be an Iterable of the same shape."
+                assert len(case) == len(factor), \
+                    "Lists 'case' and 'factor' must have equal lengths."
+                res = sum([self.xlam_surface_stresses(
+                    case=c,
+                    frmt='array',
+                    factor=f,
+                    AnalysisType=AnalysisType,
+                    LoadLevelOrModeShapeOrTimeStep=LoadLevelOrModeShapeOrTimeStep,
+                    DisplacementSystem=DisplacementSystem
+                ) for c, f in zip(case, factor)])
+            else:
+                res = [self.xlam_surface_stresses(
+                    case=c,
+                    frmt=frmt,
+                    factor=1.0,
+                    AnalysisType=AnalysisType,
+                    LoadLevelOrModeShapeOrTimeStep=LoadLevelOrModeShapeOrTimeStep,
+                    DisplacementSystem=DisplacementSystem
+                ) for c in case]
+            if frmt == 'dict':
+                return ad2d(res)
+            return res
+
         axm = self.model
         stresses = axm.Results.Stresses
         sids = self.MeshSurfaceIds
@@ -288,24 +319,12 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
             getter = partial(get_xlam_strs_comb, stresses, LoadCombinationId,
                              LoadLevelOrModeShapeOrTimeStep, AnalysisType)
         foo = partial(RXLAMSurfaceStresses2list)
-        return ak.Array(list(map(foo, map(getter, sids))))
+        factor = 1.0 if factor is None else float(factor)
+        res = factor * ak.Array(list(map(foo, map(getter, sids))))
+        if frmt == 'dict':
+            return ad2d(res)
+        return res
 
-    def critical_xlam_surface_efficiency(self, *args, CombinationType=None,
-                                         AnalysisType=None, Component=None,
-                                         MinMaxType=None, **kwargs):
-        axm = self.model
-        stresses = axm.Results.Stresses
-        params = dict(
-            MinMaxType=MinMaxType,
-            CombinationType=CombinationType,
-            AnalysisType=AnalysisType, Component=Component,
-        )
-        params.update(kwargs)
-        rec, _, factors, loadcases, _ = \
-            stresses.GetCriticalXLAMSurfaceEfficiency(**params)
-        data = np.array(get_xsev(rec))
-        return data, factors, loadcases
-    
     def critical_xlam_surface_efficiencies(self, *args, CombinationType=None,
                                            AnalysisType=None, Component=None,
                                            MinMaxType=None, **kwargs):
@@ -322,6 +341,45 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
             return np.array(RXLAMSurfaceEfficiencies2list(rec))
 
         return ak.Array(list(map(inner, self.MeshSurfaceIds)))
+
+    def critical_xlam_data(self, *args, CombinationType=None,
+                           AnalysisType=0, **kwargs):
+        Surfaces = self.model.Surfaces
+        dparams = dict(
+            MinMaxType=1,
+            CombinationType=CombinationType,
+            AnalysisType=AnalysisType,
+            Component=4  # xse_Max
+        )
+
+        sid, nid, f, lc = (None,) * 4
+        data = self.critical_xlam_surface_efficiencies(**dparams)
+        cuts = count_cols(data)
+        eff_max = ak.flatten(data[:, :, -1]).to_numpy()
+        imax = np.argmax(eff_max)
+        csum = np.cumsum(cuts)
+        iS = np.where(csum > imax)[0][0]
+        iN = imax - csum[iS-1]
+        sid = self.MeshSurfaceIds[iS]
+        nid = self.topology()[iS, iN]
+
+        if cuts[iS] == 6:
+            SurfaceVertexType = 0 if iN < 3 else 1
+        elif cuts[iS] == 8:
+            SurfaceVertexType = 0 if iN < 4 else 1
+        else:
+            raise NotImplementedError
+
+        sparams = dict(
+            SurfaceVertexType=SurfaceVertexType,
+            SurfaceVertexId=nid,
+            MinMaxType=1,
+            CombinationType=CombinationType,
+            AnalysisType=AnalysisType,
+            Component=4
+        )
+        _, f, lc = Surfaces[sid].critical_xlam_efficiency(**sparams)
+        return f, lc, (sid, nid)
 
     def _get_attrs(self):
         """Return the representation methods (internal helper)."""
@@ -341,7 +399,7 @@ class IAxisVMDomains(AxisVMModelItems, SurfaceMixin):
 
     __itemcls__ = IAxisVMDomain
     __collectioncls__ = AxDomainCollection
-    
+
     def __getitem__(self, *args) -> IAxisVMDomain:
         return super().__getitem__(*args)
 
@@ -360,15 +418,15 @@ class IAxisVMDomains(AxisVMModelItems, SurfaceMixin):
     @property
     def domain_attributes(self):
         return self.get_domain_attributes()
-    
+
     @property
     def XLAMItems(self):
-        return filter(lambda i : self.IsXLAM[i.Index], self[:])
-    
+        return filter(lambda i: self.IsXLAM[i.Index], self[:])
+
     @property
     def XLAMCount(self):
         return len(self.XLAMItems)
-    
+
     def topology(self, *args,  i=None) -> TopologyArray:
         i = i if len(args) == 0 else args[0]
         if isinstance(i, int):
@@ -385,7 +443,7 @@ class IAxisVMDomains(AxisVMModelItems, SurfaceMixin):
     def _get_attributes_raw(self, *args, i=None, **kwargs) -> Iterable:
         i = i if len(args) == 0 else args[0]
         if isinstance(i, int):
-            ids = np.array([i])
+            return self.BulkGetDomains([i])
         if isinstance(i, np.ndarray):
             ids = i
         else:
@@ -398,14 +456,14 @@ class IAxisVMDomains(AxisVMModelItems, SurfaceMixin):
     def get_domain_attributes(self, *args, i=None, raw=False, fields=None,
                               rec=None, **kwargs) -> AxisVMAttributes:
         if fields is None:
-            fields = surface_attr_fields
+            fields = surface_attr_fields + ['LineIdCounts', 'BulkLineIds']
         elif isinstance(fields, str):
             fields = [fields]
         elif isinstance(fields, Iterable):
             fields = list(filter(lambda i: i in surface_attr_fields, fields))
         if rec is None:
             i = i if len(args) == 0 else args[0]
-            rec = self._get_attributes_raw(i)
+            rec = self._get_attributes_raw(i=i)
         if raw:
             return rec
         else:
@@ -422,7 +480,7 @@ class IAxisVMDomains(AxisVMModelItems, SurfaceMixin):
         return self.get_domain_attributes(*args, **kwargs)
 
     def get_xlam_domain_indices(self):
-        return list(map(lambda i : i.Index, self.XLAMItems))
-    
+        return list(map(lambda i: i.Index, self.XLAMItems))
+
     def records(self, *args, **kwargs):
         return self.get_domain_attributes(*args, raw=True, **kwargs)

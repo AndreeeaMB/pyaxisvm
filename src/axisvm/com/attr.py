@@ -10,3 +10,7 @@ class AxisVMAttributes(dict):
 
     def to_awkward(self, nested=False) -> ak.Record:
         return ak.Record(self)
+    
+
+def squeeze_attributes(d):
+    return AxisVMAttributes({i : v[0] for i,v in d.items()})

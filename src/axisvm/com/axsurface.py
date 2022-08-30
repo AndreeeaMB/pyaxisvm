@@ -7,6 +7,7 @@ from functools import partial
 
 import awkward as ak
 
+from sigmaepsilon.core import issequence
 from sigmaepsilon.mesh.topo import TopologyArray, unique_topo_data
 from sigmaepsilon.mesh.topo.topodata import edges_Q4
 from sigmaepsilon.mesh.tri.triutils import edges_tri
@@ -15,8 +16,9 @@ from sigmaepsilon.mesh.topo import detach as detach_mesh
 
 import axisvm
 from .core.wrap import AxisVMModelItem, AxisVMModelItems
-from .core.utils import (RMatrix3x3toNumPy, triangulate, RSurfaceForces2list, 
-                         RSurfaceStresses2list)
+from .core.utils import (RMatrix3x3toNumPy, triangulate, RSurfaceForces2list,
+                         RSurfaceStresses2list, get_xsev, RXLAMSurfaceStresses2list,
+                         get_xlam_strs_case, get_xlam_strs_comb)
 from .attr import AxisVMAttributes
 
 surfacetype_to_str = {
@@ -34,8 +36,10 @@ surface_attr_fields = ['Thickness', 'SurfaceType', 'RefZId', 'RefXId',
 surface_data_fields = ['N', 'Attr', 'DomainIndex', 'LineIndex1',
                        'LineIndex2', 'LineIndex3', 'LineIndex4']
 
-def xyz(p): 
+
+def xyz(p):
     return [p.x, p.y, p.z]
+
 
 def get_surface_attributes(obj, *args, i=None, fields=None, raw=False,
                            rec=None, attr=None, **kwargs):
@@ -94,14 +98,14 @@ class SurfaceMixin:
         try:
             eQ, _ = unique_topo_data(edges_Q4(topo[i8, :4].to_numpy()))
         except Exception:
-            eQ, _ = unique_topo_data(edges_Q4(topo[i8, :4]))        
+            eQ, _ = unique_topo_data(edges_Q4(topo[i8, :4]))
         return np.vstack([eT, eQ])
 
     def triangles(self, topology=None):
         topo = self.topology() if topology is None else topology
         return triangulate(topo)
-        
-    def plot(self, *args, scalars=None, plot_edges=True, detach=False, 
+
+    def plot(self, *args, scalars=None, plot_edges=True, detach=False,
              backend='mpl', **kwargs):
         topo = self.topology()
         triangles = self.triangles(topo) - 1
@@ -146,6 +150,88 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
     @property
     def surface_attributes(self):
         return self.parent.get_surface_attributes(self.Index)
+
+    def xlam_stresses(self, case=None, combination=None,
+                      LoadCaseId=None, LoadCombinationId=None,
+                      DisplacementSystem=0, LoadLevelOrModeShapeOrTimeStep=1,
+                      AnalysisType=0, frmt='array', factor=None):
+        #assert self.IsXLAM, "This is not an XLAM domain!"
+
+        def ad2d(arr): return {i: arr[:, i] for i in range(13)}
+
+        if issequence(case):
+            if factor is not None:
+                assert issequence(factor), \
+                    "If 'case' is an Iterable, 'factor' must be an Iterable of the same shape."
+                assert len(case) == len(factor), \
+                    "Lists 'case' and 'factor' must have equal lengths."
+                res = sum([self.xlam_stresses(
+                    case=c,
+                    frmt='array',
+                    factor=f,
+                    AnalysisType=AnalysisType,
+                    LoadLevelOrModeShapeOrTimeStep=LoadLevelOrModeShapeOrTimeStep,
+                    DisplacementSystem=DisplacementSystem
+                ) for c, f in zip(case, factor)])
+            else:
+                res = [self.xlam_stresses(
+                    case=c,
+                    frmt=frmt,
+                    factor=1.0,
+                    AnalysisType=AnalysisType,
+                    LoadLevelOrModeShapeOrTimeStep=LoadLevelOrModeShapeOrTimeStep,
+                    DisplacementSystem=DisplacementSystem
+                ) for c in case]
+            if frmt == 'dict':
+                return ad2d(res)
+            return res
+
+        axm = self.model
+        stresses = axm.Results.Stresses
+        
+        LoadCaseId, LoadCombinationId = \
+            stresses._get_case_or_component(case=case, combination=combination,
+                                            LoadCaseId=LoadCaseId,
+                                            LoadCombinationId=LoadCombinationId)
+
+        config = dict(
+            LoadCaseId=LoadCaseId,
+            LoadCombinationId=LoadCombinationId,
+            LoadLevelOrModeShapeOrTimeStep=LoadLevelOrModeShapeOrTimeStep,
+            DisplacementSystem=DisplacementSystem
+        )
+        stresses.config(**config)
+
+        if LoadCaseId is not None:
+            getter = partial(get_xlam_strs_case, stresses, LoadCaseId,
+                             LoadLevelOrModeShapeOrTimeStep, AnalysisType)
+        elif LoadCombinationId is not None:
+            getter = partial(get_xlam_strs_comb, stresses, LoadCombinationId,
+                             LoadLevelOrModeShapeOrTimeStep, AnalysisType)            
+        factor = 1.0 if factor is None else float(factor)
+        res = factor * np.array(RXLAMSurfaceStresses2list(getter(self.Index)))
+    
+        if frmt == 'dict':
+            return ad2d(res)
+        return res
+
+    def critical_xlam_efficiency(self, *args, CombinationType=None,
+                                 AnalysisType=None, Component=None,
+                                 MinMaxType=None, **kwargs):
+        axm = self.model
+        stresses = axm.Results.Stresses
+        params = dict(
+            SurfaceId=self.Index,
+            MinMaxType=MinMaxType,
+            CombinationType=CombinationType,
+            AnalysisType=AnalysisType, 
+            Component=Component,
+        )
+        params.update(kwargs)
+        rec, _, factors, loadcases, _ = \
+            stresses.GetCriticalXLAMSurfaceEfficiency(**params)
+        data = np.array(get_xsev(rec))
+        return data, factors, loadcases
 
     def _get_attrs(self) -> Iterable:
         """Return the representation methods (internal helper)."""
@@ -305,11 +391,11 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
         s = self._wrapped
         rec = list(map(lambda i: s.Item[i].GetTrMatrix()[0], inds))
         return np.array(list(map(RMatrix3x3toNumPy, rec)), dtype=float)
-    
+
     def generalized_surface_forces(self, *args, case=None, combination=None,
                                    DisplacementSystem=None, LoadCaseId=None,
-                                   LoadLevelOrModeShapeOrTimeStep=None, 
-                                   LoadCombinationId=None,**kwargs):
+                                   LoadLevelOrModeShapeOrTimeStep=None,
+                                   LoadCombinationId=None, **kwargs):
         axm = self.model
         if case is not None:
             LoadCombinationId = None
@@ -353,10 +439,10 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
         elif LoadCombinationId is not None:
             recs = forces.AllSurfaceForcesByLoadCombinationId()[0]
         return ak.Array(list(map(RSurfaceForces2list, recs)))
-    
+
     def surface_stresses(self, *args, case=None, combination=None,
                          DisplacementSystem=None, LoadCaseId=None,
-                         LoadLevelOrModeShapeOrTimeStep=None, 
+                         LoadLevelOrModeShapeOrTimeStep=None,
                          LoadCombinationId=None, z='m', **kwargs):
         axm = self.model
         if case is not None:

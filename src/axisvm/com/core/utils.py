@@ -145,7 +145,6 @@ def RSurfaceStresses2list(rec, mode=None):
 
 # %%
 
-
 def get_xssv(rec):
     return [rec.xssvSxx_m_T, rec.xssvSyy_m_T, rec.xssvSxy_m_T,
             rec.xssvSxx_m_B, rec.xssvSyy_m_B, rec.xssvSxy_m_B,
@@ -352,13 +351,6 @@ mtype2str = {
     4: 'Aluminium',
     5: 'Brick'
 }
-
-
-def get_xssv(rec):
-    return [rec.xssvSxx_m_T, rec.xssvSyy_m_T, rec.xssvSxy_m_T,
-            rec.xssvSxx_m_B, rec.xssvSyy_m_B, rec.xssvSxy_m_B,
-            rec.xssvSxx_n, rec.xssvSyy_n, rec.xssvSxy_n,
-            rec.xssvSxz_max, rec.xssvSyz_max, rec.xssvSrx_max, rec.xssvSry_max]
 
 
 xlmstrcomp2int = dict(

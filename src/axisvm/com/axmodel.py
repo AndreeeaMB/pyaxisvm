@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 import numpy as np
+import awkward as ak
 
 from sigmaepsilon.mesh import PointCloud, CartesianFrame
 from sigmaepsilon.mesh.topo import TopologyArray
+from sigmaepsilon.math.linalg.sparse.utils import count_cols
 
 from .core.wrap import AxWrapper, AxisVMModelItems
 from .core.utils import RDisplacementValues2list
 
 from .axnode import IAxisVMNodes
-from .axdomain import IAxisVMDomains
+from .axdomain import IAxisVMDomains, AxDomainCollection
 from .axmember import IAxisVMMembers
 from .axsurface import IAxisVMSurfaces
 from .axline import IAxisVMLines
@@ -62,11 +64,11 @@ class IAxisVMModel(AxWrapper):
     @property
     def Domains(self) -> IAxisVMDomains:
         return IAxisVMDomains(model=self, wrap=self._wrapped.Domains)
-    
+
     @property
-    def XLAMDomains(self):
-        return list(self.Domains.XLAMItems)
-    
+    def XLAMDomains(self) -> AxDomainCollection:
+        return AxDomainCollection(self.Domains.XLAMItems)
+
     @property
     def Lines(self) -> IAxisVMLines:
         return IAxisVMLines(model=self, wrap=self._wrapped.Lines)
@@ -78,7 +80,7 @@ class IAxisVMModel(AxWrapper):
     @property
     def Windows(self) -> IAxisVMWindows:
         return IAxisVMWindows(model=self, wrap=self._wrapped.Windows)
-    
+
     @property
     def Results(self) -> IAxisVMResults:
         return IAxisVMResults(model=self, wrap=self._wrapped.Results)
@@ -86,7 +88,7 @@ class IAxisVMModel(AxWrapper):
     @property
     def Calculation(self) -> IAxisVMCalculation:
         return IAxisVMCalculation(model=self, wrap=self._wrapped.Calculation)
-    
+
     @property
     def Materials(self) -> IAxisVMMaterials:
         return IAxisVMMaterials(model=self, wrap=self._wrapped.Materials)
@@ -194,9 +196,58 @@ class IAxisVMModel(AxWrapper):
 
     def generalized_surface_forces(self, *args, **kwargs):
         return self.Surfaces.generalized_surface_forces(*args, **kwargs)
-        
+
     def surface_stresses(self, *args, **kwargs):
         return self.Surfaces.surface_stresses(*args, **kwargs)
+
+    def critical_xlam_data(self, *args, CombinationType=None,  AnalysisType=0, **kwargs):
+        Domains = self.Domains
+        Surfaces = self.Surfaces
+        dparams = dict(
+            MinMaxType=1,
+            CombinationType=CombinationType,
+            AnalysisType=AnalysisType,
+            Component=4  # xse_Max
+        )
+
+        def get_efficiencies(i):
+            return Domains[i].critical_xlam_surface_efficiencies(**dparams)
+        
+        vmax = 0 
+        did, sid, nid, f, lc = (None,) * 5
+        for d in Domains.XLAMItems:
+            data = get_efficiencies(d.Index)
+            cuts = count_cols(data)
+            eff_max = ak.flatten(data[:, :, -1]).to_numpy()
+            imax = np.argmax(eff_max)
+            _vmax = eff_max[imax]
+            if _vmax > vmax:
+                vmax = _vmax
+                did = d.Index 
+                csum = np.cumsum(cuts)
+                iS = np.where(csum > imax)[0][0]
+                iN = imax - csum[iS-1]
+                sid = d.MeshSurfaceIds[iS]
+                nid = d.topology()[iS, iN]
+
+                if cuts[iS] == 6:
+                    SurfaceVertexType = 0 if iN < 3 else 1
+                elif cuts[iS] == 8:
+                    SurfaceVertexType = 0 if iN < 4 else 1
+                else:
+                    raise NotImplementedError
+
+                sparams = dict(
+                    SurfaceVertexType=SurfaceVertexType,
+                    SurfaceVertexId=nid,
+                    MinMaxType=1,
+                    CombinationType=CombinationType,
+                    AnalysisType=AnalysisType,
+                    Component=4
+                )
+                _, f, lc = Surfaces[sid].critical_xlam_efficiency(**sparams)
+                
+        return f, lc, (did, sid, nid)
 
     def __enter__(self):
         if self._wrapped is not None:
