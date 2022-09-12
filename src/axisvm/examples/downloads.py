@@ -5,9 +5,10 @@ rapid reuse of these datasets.
 
 Examples
 --------
+>>> from axisvm.com.client import start_AxisVM
 >>> from axisvm import examples
->>> mesh = examples.download_saddle_surface()
->>> mesh.plot()
+>>> axvm = start_AxisVM(visible=True, daemon=True)
+>>> axvm.model = examples.download_bernoulli_grid()
 
 """
 

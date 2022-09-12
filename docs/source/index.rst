@@ -1,7 +1,6 @@
 PyAxisVM - The official python package of **AxisVM**
 ====================================================
 
-
 The **PyAxisVM** project offers a high-level interface to **AxisVM**, 
 making its operations available directly from Python. It builds on top of 
 Microsoft's COM technology and supports all the features of the original 
@@ -19,22 +18,19 @@ On top of that, **PyAxisVM** enhances the type library with Python's slicing
 mechanism, context management and more, that enables writing clean, concise, 
 and readable code.
 
->>> from axisvm.com.client import start_AxisVM
->>> axapp = start_AxisVM(visible=True)
+.. _getting started:
 
-Contents
---------
+.. include:: getting_started.md
+    :parser: myst_parser.sphinx_
 
 .. toctree::
-   :maxdepth: 3
-
-   getting_started   
+   :maxdepth: 2
+   :glob:
+   :hidden:
+ 
    tips_and_tricks
    api_python
-   api_com
    
-   
-
 Indices and tables
 ------------------
 
