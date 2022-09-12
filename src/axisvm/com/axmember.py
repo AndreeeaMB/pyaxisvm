@@ -5,7 +5,7 @@ import numpy as np
 from numpy import ndarray as Array
 import awkward as ak
 
-from sigmaepsilon.mesh.topo import TopologyArray
+from polymesh.topo import TopologyArray
 
 import axisvm
 from .core.wrap import AxisVMModelItem, AxisVMModelItems

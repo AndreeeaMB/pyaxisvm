@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from sigmaepsilon.core.wrapping import Wrapper
+from dewloosh.core.wrapping import Wrapper
 from typing import Callable, Iterable, Any
 
 

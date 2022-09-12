@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-from sigmaepsilon.mesh.topo.tr import Q8_to_T3, T6_to_T3
-from sigmaepsilon.math.linalg.sparse.utils import count_cols
+from polymesh.topo.tr import Q8_to_T3, T6_to_T3
+from neumann.linalg.sparse.utils import count_cols
 
 
 def RMatrix2x2toNumPy(RMatrix):

@@ -4,8 +4,8 @@ from typing import Iterable
 import awkward as ak
 import numpy as np
 from numpy import ndarray as Array
-from sigmaepsilon.mesh.topo import TopologyArray
-from sigmaepsilon.mesh.plotting.plotly import plot_lines_3d
+from polymesh.topo import TopologyArray
+from dewloosh.plotly import plot_lines_3d
 
 import axisvm
 

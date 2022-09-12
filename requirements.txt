@@ -1,6 +1,14 @@
 setuptools
 wheel
 pywin32
-#dewloosh.core
+appdirs
+dewloosh.core
+dewloosh.mpl
+dewloosh.plotly
 comtypes==1.1.11
 numpy
+pandas
+latexdocs
+awkward
+pyvista
+nbformat

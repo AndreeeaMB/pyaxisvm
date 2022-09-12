@@ -8,16 +8,16 @@ from numpy import ndarray as Array
 
 import matplotlib.tri as tri
 
-from sigmaepsilon.core import issequence
-from sigmaepsilon.core.tools import float_to_str_sig
+from dewloosh.core import issequence
+from dewloosh.core.tools import float_to_str_sig
 
-from sigmaepsilon.math.linalg import Vector
-from sigmaepsilon.math.array import minmax
-from sigmaepsilon.mesh import PointCloud, CartesianFrame
-from sigmaepsilon.mesh.tri import triplot
-from sigmaepsilon.mesh.topo import TopologyArray, rewire
-from sigmaepsilon.mesh.utils import decompose
-from sigmaepsilon.math.linalg.sparse.utils import count_cols
+from neumann.linalg import Vector
+from neumann.array import minmax
+from polymesh import PointCloud, CartesianFrame
+from dewloosh.mpl import triplot
+from polymesh.topo import TopologyArray, rewire
+from polymesh.utils import decompose
+from neumann.linalg.sparse.utils import count_cols
 
 import axisvm
 from .core.wrap import AxisVMModelItem, AxisVMModelItems, AxItemCollection

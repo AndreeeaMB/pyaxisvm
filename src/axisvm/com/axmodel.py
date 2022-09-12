@@ -2,9 +2,9 @@
 import numpy as np
 import awkward as ak
 
-from sigmaepsilon.mesh import PointCloud, CartesianFrame
-from sigmaepsilon.mesh.topo import TopologyArray
-from sigmaepsilon.math.linalg.sparse.utils import count_cols
+from polymesh import PointCloud, CartesianFrame
+from polymesh.topo import TopologyArray
+from neumann.linalg.sparse.utils import count_cols
 
 from .core.wrap import AxWrapper, AxisVMModelItems
 from .core.utils import RDisplacementValues2list
