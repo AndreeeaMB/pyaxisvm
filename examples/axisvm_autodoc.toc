@@ -1,8 +1,0 @@
-\contentsline {section}{\numberline {1}Model Information}{3}%
-\contentsline {subsection}{\numberline {1.1}Domains}{3}%
-\contentsline {section}{\numberline {2}Results}{4}%
-\contentsline {subsection}{\numberline {2.1}ULS}{4}%
-\contentsline {subsubsection}{\numberline {2.1.1}Degree of freedom solution of a domain for a single load case.}{4}%
-\contentsline {subsubsection}{\numberline {2.1.2}Von{-}Mises stress distribution of a domain for a single load case.}{4}%
-\contentsline {section}{\numberline {3}XLAM}{5}%
-\contentsline {subsection}{\numberline {3.1}Efficiencies}{5}%
