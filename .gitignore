@@ -140,3 +140,7 @@ workspace.code-workspace
 
 *.code-workspace
 
+# working files in notebooks folder
+notebooks/*.pdf
+notebooks/*.tex
+notebooks/*.toc
