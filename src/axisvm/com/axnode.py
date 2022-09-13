@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict
-import numpy as np
 
 from .core.wrap import AxisVMModelItem, AxisVMModelItems
 from .axsurface import SurfaceMixin

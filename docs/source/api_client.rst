@@ -1,4 +1,4 @@
-Starting the COM server
-=======================
+Client-Side Operations
+======================
 
 .. autofunction:: axisvm.com.client.start_AxisVM
