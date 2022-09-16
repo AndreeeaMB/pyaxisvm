@@ -11,8 +11,8 @@ def start_AxisVM(*args, join=False, visible=None,
                  daemon=False, wrap=True, **kwargs) -> AxApp:
     """Returns an interface to a new, or an existing AxisVM application. 
     
-    If the argument `join` is True, an attempt is made to connect to an \n
-    already running instance. If there is a running instance but `join` \n
+    If the argument `join` is True, an attempt is made to connect to an 
+    already running instance. If there is a running instance but `join` 
     is False, that instance gets destroyed and a new one will be created.
     
     If the first argument is a valid path to an AxisVM model file, it gets
@@ -20,21 +20,21 @@ def start_AxisVM(*args, join=False, visible=None,
 
     Parameters
     ----------
-    join : boolean, optional \n
-        Controls what to do if there is an already running instance \n
+    join : boolean, Optional 
+        Controls what to do if there is an already running instance 
         to connect to. Default is False.
         
-        This is only available from X6r2. For versions prior to this, \n
+        This is only available from X6r2. For versions prior to this, 
         `join=True` has no effect and a new instance is created every time.
 
-    visible : boolean or None, optional \n
+    visible : boolean or None, Optional
         Sets the visibility of the AxisVM application, while a None\n
         value takes no effect. Default is None.
 
-    daemon : boolean, optional \n
-        Controls the behaviour of the COM interface. Default is False. \n
+    daemon : boolean, Optional 
+        Controls the behaviour of the COM interface. Default is False. 
 
-        Assuming that `axapp` is a COM interface to an AxisVM application,\n
+        Assuming that `axapp` is a COM interface to an AxisVM application,
         `daemon=True` is equivalent to
 
         >>> from axisvm.com.tlb import acEnableNoWarning, lbFalse, lbTrue
@@ -43,19 +43,25 @@ def start_AxisVM(*args, join=False, visible=None,
         >>> axapp.AskSaveOnLastReleased = lbFalse
         >>> axapp.ApplicationClose = acEnableNoWarning
         
-    wrap : boolean, optional \n
-        Wraps the returning object if True, returns the raw object otherwise. \n
+    wrap : boolean, Optional
+        Wraps the returning object if True, returns the raw object otherwise. 
         Default is True.
 
     Returns
     -------
-    axisvm.axapp.AxApp
+    :class:`axisvm.com.axapp.AxApp`
         A python wrapper around an IAxisVMApplication instance.
         
     Examples
     --------
     >>> from axisvm.com.client import start_AxisVM
     >>> axvm = start_AxisVM(visible=True, daemon=True)
+    
+    See Also
+    --------
+    :func:`axisvm.com.tlb.wrap_axisvm_tlb`
+    :func:`axisvm.com.tlb.find_axisvm_tlb`
+    
     """
     axapp = _find_AxisVM()
     if axapp is not None and not join:

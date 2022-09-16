@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
-
+from typing import Union
 import axisvm
 
 from .core.wrap import AxWrapper
@@ -9,7 +9,10 @@ from .axcatalog import IAxisVMCatalog
 
 
 class IAxisVMApplication(AxWrapper):
-    """Wrapper for the `IAxisVMApplication` COM interface."""
+    """
+    Wrapper for the `IAxisVMApplication` COM interface.
+
+    """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -23,6 +26,7 @@ class IAxisVMApplication(AxWrapper):
         """
         Returns a pointer object to the `IAxisVMApplication` COM interface of 
         the embedding AxisVM instance.
+
         """
         return self._wrapped
 
@@ -30,6 +34,7 @@ class IAxisVMApplication(AxWrapper):
     def Models(self):
         """
         Returns a pointer object to the `IAxisVMModels` COM interface.
+
         """
         return IAxisVMModels(app=self, wrap=self._wrapped.Models)
 
@@ -44,11 +49,16 @@ class IAxisVMApplication(AxWrapper):
         As of now, AxisVM only supports one active model at once, but this may 
         change later. Nontheless, the interface is designed as if it was able to handle
         multiple active models.
+
         """
         return self._model
 
     @model.setter
-    def model(self, value):
+    def model(self, value: Union[int, str]):
+        """
+        Sets the active model.
+        
+        """
         if isinstance(value, int):
             self._model = IAxisVMModel(wrap=self._wrapped.Models.Item[value])
         elif isinstance(value, str):
@@ -61,16 +71,11 @@ class IAxisVMApplication(AxWrapper):
         else:
             raise RuntimeError("Invalid input : {}!".format(value))
 
-    def new_model(self, file_path: str = None) -> IAxisVMModel:
+    def new_model(self) -> IAxisVMModel:
         """
         Creates new model and returns a pointer object to its `IAxisVMModel` 
         COM interface. Optinally, it saves the model, given that a valid file
         path is provided.
-
-        Parameters
-        ----------
-        file_path : string, Optional
-            A file path to save the model to. Default is None.
 
         """
         self.model = self._wrapped.Models.New()
@@ -166,6 +171,7 @@ class IAxisVMApplication(AxWrapper):
         will still receive events indirectly through HandleMessages, making it possible
         to process those events and ultimately to set the flag that will unblock the
         thread which was blocked through the loop.
+
         """
         return self._wrapped.HandleMessages()
 
@@ -281,9 +287,6 @@ class IAxisVMApplication(AxWrapper):
         The model should be saved after modification or if newer version of
         AxisVM is used.
 
-        Returns
-        -------
-        int
         """
         return self._wrapped.AskSaveOnLastReleased
 
@@ -292,10 +295,6 @@ class IAxisVMApplication(AxWrapper):
         """
         If True, on any attempt to shutdown the COM server a dialog window pops up, 
         to warn us to save our model. 
-
-        Parameters
-        ----------
-        value : bool
 
         """
         assert isinstance(value, bool)
@@ -310,6 +309,7 @@ class IAxisVMApplication(AxWrapper):
         -------
         int
             32 bit AxisVM -> 0
+
             64 bit AxisVM -> 1
 
         """
@@ -334,7 +334,8 @@ class IAxisVMApplication(AxWrapper):
         platform = '32' if self.AxisVMPlatform == 0 else '64'
         platform += ' bit'
         attrs.append(("AxisVM Platform", platform, "{}"))
-        version = "{} {}".format(self.LibraryMajorVersion, self.LibraryMinorVersion)
+        version = "{} {}".format(
+            self.LibraryMajorVersion, self.LibraryMinorVersion)
         attrs.append(("AxisVM Version", self.Version, "{}"))
         attrs.append(("Type Library Version", version, "{}"))
         return attrs

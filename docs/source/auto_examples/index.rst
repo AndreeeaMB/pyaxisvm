@@ -11,7 +11,30 @@ Examples Gallery
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="Make and show a screenshot about AxisVM!">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_0_grid1_thumb.png
+    :alt: Screenshot
+
+  :ref:`sphx_glr_auto_examples_plot_0_grid1.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Screenshot</div>
     </div>
+
+
+.. raw:: html
+
+    </div>
+
+
+.. toctree::
+   :hidden:
+
+   /auto_examples/plot_0_grid1
 
 
 .. only:: html

@@ -17,33 +17,10 @@ from .axline import IAxisVMLines
 from .axwindow import IAxisVMWindows
 from .axresult import IAxisVMResults
 from .axmaterial import IAxisVMMaterials
+from .axcalculation import IAxisVMCalculation
 
 
 __all__ = ['IAxisVMModels', 'IAxisVMModel']
-
-
-class IAxisVMCalculation(AxisVMModelItems):
-    """Wrapper for the `IAxisVMCalculation` COM interface."""
-
-    def LinearAnalysis(self, *args, interact=False, show=False, autocorrect=True):
-        if len(args) > 0 and isinstance(args[0], int):
-            itype = args[0]
-        else:
-            import axisvm.com.tlb as axtlb
-            if interact:
-                itype = axtlb.cuiUserInteraction
-            else:
-                if show and autocorrect:
-                    itype = axtlb.cuiNoUserInteractionWithAutoCorrect
-                elif not show and autocorrect:
-                    itype = axtlb.cuiNoUserInteractionWithoutAutoCorrect
-                elif not show and autocorrect:
-                    itype = axtlb.cuiNoUserInteractionWithAutoCorrectNoShow
-                elif not show and not autocorrect:
-                    itype = axtlb.cuiNoUserInteractionWithoutAutoCorrectNoShow
-                else:
-                    raise NotImplementedError
-        return self._wrapped.LinearAnalysis(itype)
 
 
 class IAxisVMModel(AxWrapper):

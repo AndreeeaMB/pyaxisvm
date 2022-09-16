@@ -24,12 +24,20 @@ and readable code.
     :parser: myst_parser.sphinx_
 
 .. toctree::
+    :maxdepth: 4
+    :glob:
+    :hidden:
+
+    auto_examples/index.rst
+
+.. toctree::
    :maxdepth: 2
    :glob:
    :hidden:
  
    tips_and_tricks
-   api_python
+   api
+   downloads
    
 Indices and tables
 ------------------

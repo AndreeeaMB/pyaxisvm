@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict
 
+import axisvm.com.tlb as axtlb
+
 from .core.wrap import AxisVMModelItem, AxisVMModelItems
 from .axsurface import SurfaceMixin
 
@@ -18,11 +20,11 @@ class IAxisVMNodes(AxisVMModelItems, SurfaceMixin):
 
     __itemcls__ = IAxisVMNode
 
-    def get(self, *args, interactive=False, **kwargs):
+    def get_record(self, *args, interactive=False, **kwargs) -> axtlb.RNode:
         """
-        Returns a list of nodes, which can be specified by keyword
+        Returns a list of node records, which can be specified by keyword
         arguments. It can be used to turn an arbitrary specification
-        of nodes in an embedded situation into a list of nodes.
+        of nodes in an embedded situation into a list of node recirds.
         For that reason it includes trivial keys. Individual elements
         can be specified, but the result is always a list. If there are
         no valid specifiers, then
@@ -35,18 +37,20 @@ class IAxisVMNodes(AxisVMModelItems, SurfaceMixin):
 
         Parameters
         ----------
-        Possible keys and values
-        node : a single domain, returns [node]
-        nodes : a list of nodes, returns nodes
-        ID : int, a single nodeID
-        IDs : [int], a sequence of nodeIDs
-        UID : int, a single nodeUID
-        UIDs : [int], a sequence of nodeUIDs
-
-        Examples
-        --------
-        >>> nodes = get_nodes(Model,**kwargs)
-        >>> nodes = get_nodes(Model)
+        **kwargs : dict, Optional
+            Possible keyword arguments:
+            
+                node : a single node, returns a sigle record
+                
+                nodes : a list of nodes, returns a list of records
+                
+                ID : int, a single nodeID
+                
+                IDs : list of int, a sequence of nodeIDs
+                
+                UID : int, a single nodeUID
+                
+                UIDs : list of int, a sequence of nodeUIDs
 
         """
         Model = self.model
@@ -76,13 +80,23 @@ class IAxisVMNodes(AxisVMModelItems, SurfaceMixin):
                 if nodes is None and 'all' in args:
                     nNode = Model.Nodes.Count
                     nodeIDs = [i for i in range(1, nNode+1)]
-                    nodes = self.get(IDs=nodeIDs, interactive=False)
+                    nodes = self.get_record(IDs=nodeIDs, interactive=False)
             return nodes
 
     def select(self, clear=True, msg: str = None):
         """
         Shows up a selectiondialog for nodes in AxisVM and returns the selected
         nodes if succesful.
+        
+        Parameters
+        ----------
+        clear : boolean, Optional
+            Clears selection if True. Default is True.
+            
+        msg : str, Optional
+            The message to show. If not provided, a default message is shown. 
+            Default is True.
+            
         """
         if msg is None:
             msg = 'Select one or more nodes!'
@@ -129,6 +143,7 @@ class IAxisVMNodes(AxisVMModelItems, SurfaceMixin):
         or simply
             nodeIDs = get_IDs(Model)
         to get nodeIDs from a selection in AxisVM.
+        
         """
         nodeIDs = None
         Model = self.model
@@ -163,6 +178,16 @@ class IAxisVMNodes(AxisVMModelItems, SurfaceMixin):
         """
         Shows up a selectiondialog for nodes in AxisVM and returns the selected
         nodeIDs if succesful.
+        
+        Parameters
+        ----------
+        clear : boolean, Optional
+            Clears selection if True. Default is True.
+            
+        msg : str, Optional
+            The message to show. If not provided, a default message is shown. 
+            Default is True.
+            
         """
         if msg is None:
             msg = 'Select one or more nodes!'
@@ -175,6 +200,7 @@ class IAxisVMNodes(AxisVMModelItems, SurfaceMixin):
         """
         Returns a list of nodeIDs. The result is always iterable,
         even if it contains only one item.
+        
         """
         Model = self.model
         try:
@@ -191,6 +217,7 @@ class IAxisVMNodes(AxisVMModelItems, SurfaceMixin):
         specification of nodes see the documentation of function : get_IDs.
         If as_dict == True, result is a dictionary that maps nodeIDs to lists
         of surfaceIDs.
+        
         """
         Model = self.model
         nodeIDs = self.get_IDs(**kwargs)

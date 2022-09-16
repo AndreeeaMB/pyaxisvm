@@ -1,4 +1,8 @@
 Client-Side Operations
 ======================
 
-.. autofunction:: axisvm.com.client.start_AxisVM
+.. automodule:: axisvm.com.client
+    :members:
+
+.. automodule:: axisvm.com.tlb
+    :members: find_axisvm_tlb, wrap_axisvm_tlb
