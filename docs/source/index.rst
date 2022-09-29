@@ -1,5 +1,11 @@
+.. image:: AxisVM_logo.bmp
+
 PyAxisVM - The official python package of **AxisVM**
 ====================================================
+
+----
+
+.. image:: gt40.png
 
 The **PyAxisVM** project offers a high-level interface to **AxisVM**, 
 making its operations available directly from Python. It builds on top of 

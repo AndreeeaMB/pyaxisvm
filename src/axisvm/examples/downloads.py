@@ -251,3 +251,24 @@ def download_sample_001():  # pragma: no cover
     
     """
     return _download_and_read('sample_001.axs')
+
+
+def download_plate_ss():  # pragma: no cover
+    """
+    Downloads an AxisVM model with a few beams, trusses and
+    domains. 
+
+    Returns
+    -------
+    str
+        A path to an AxisVM model file on your filesystem.
+
+    Example
+    --------
+    >>> from axisvm.com.client import start_AxisVM
+    >>> from axisvm import examples
+    >>> axvm = start_AxisVM(visible=True, daemon=True)
+    >>> axvm.model = examples.download_plate_ss()
+    
+    """
+    return _download_and_read('ss_plate_vX5r4.axs')
