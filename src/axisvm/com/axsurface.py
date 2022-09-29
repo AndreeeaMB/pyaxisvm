@@ -2,7 +2,7 @@
 import numpy as np
 import awkward as ak
 from numpy import ndarray as Array
-from typing import Iterable
+from typing import Iterable, Union
 from functools import partial
 
 import awkward as ak
@@ -87,6 +87,7 @@ def get_surface_attributes(obj, *args, i=None, fields=None, raw=False,
 class SurfaceMixin:
 
     def surface_edges(self, topology=None):
+        """Returns the edges of the surface."""
         topo = self.topology() if topology is None else topology
         w = topo.widths()
         i6 = np.where(w == 6)[0]
@@ -102,11 +103,13 @@ class SurfaceMixin:
         return np.vstack([eT, eQ])
 
     def triangles(self, topology=None):
+        """Returns the topology as a collection of triangles."""
         topo = self.topology() if topology is None else topology
         return triangulate(topo)
 
     def plot(self, *args, scalars=None, plot_edges=True, detach=False,
              backend='mpl', **kwargs):
+        """Plots the mesh using `matplotlib`."""
         topo = self.topology()
         triangles = self.triangles(topo) - 1
         edges = None
@@ -128,33 +131,120 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
     """Wrapper for the `IAxisVMSurface` COM interface."""
 
     def topology(self) -> TopologyArray:
+        """Returns the node indices of the surface."""
         return self.parent.topology(self.Index)
 
     def record(self):
+        """Returns the record of the surface."""
         return self.parent.records(self.Index)
 
     def normal(self) -> Array:
+        """Returns the normal vector of the surface."""
         return self.parent.normals(self.Index)
 
     def transformation_matrix(self) -> Array:
+        """Returns the transformation matrix of the surface."""
         return self.parent.transformation_matrices(self.Index)
 
     @property
     def tr(self):
+        """Returns the transformation matrix of the surface."""
         return self.transformation_matrix()
 
     @property
-    def attributes(self):
+    def attributes(self) -> dict:
+        """Returns the attributes of the surface as a dictionary."""
         return self.parent.get_attributes(self.Index)
 
     @property
-    def surface_attributes(self):
+    def surface_attributes(self) -> dict:
+        """Returns the surface attributes of the surface as a dictionary."""
         return self.parent.get_surface_attributes(self.Index)
 
-    def xlam_stresses(self, case=None, combination=None,
-                      LoadCaseId=None, LoadCombinationId=None,
-                      DisplacementSystem=0, LoadLevelOrModeShapeOrTimeStep=1,
-                      AnalysisType=0, frmt='array', factor=None):
+    def xlam_stresses(self, case:Union[str, Iterable]=None, combination:str=None,
+                      LoadCaseId:int=None, LoadCombinationId:int=None,
+                      DisplacementSystem:int=0, LoadLevelOrModeShapeOrTimeStep:int=1,
+                      AnalysisType=0, frmt:str='array', factor:Iterable=None) \
+                          -> Union[dict, np.ndarray]:
+        """
+        Returns XLAM stresses either as a :class:`numpy.ndarray` or as a dictionary.
+        
+        Parameters
+        ----------
+        DisplacementSystem : int, Optional
+            0 for local, 1 for global. Default is 1.
+        
+        LoadCaseId : int, Optional
+            Default is None.
+            
+        LoadLevelOrModeShapeOrTimeStep : int, Optional
+            Default is None.
+            
+        LoadCombinationId : int, Optional
+            Default is None.
+            
+        case : Union[str, Iterable], Optional
+            The name of a loadcase or an iterable of indices. 
+            Default is None.
+        
+        combination : str, Optional
+            The name of a load combination. Default is None.
+            
+        AnalysisType : int, Optional
+            Default is 0.
+            
+        frmt : str, Optional
+            Controls the type of the result. With 'array' it is a
+            3d NumPy array, otherwise a dictionary. Default is 'array'.
+        
+        factor : Iterable, Optional
+            Linear coefficients for the different load cases specified with 'case'.
+            If 'case' is an Iterable, 'factor' must be an Iterable of the same shape.
+            Default is None.
+            
+        Notes
+        -----
+        1) It is the user who has to make sure that this call is only called on surfaces,
+        that belong to an XLAM domain.
+        2) The returned stresses do not belong to the same position.
+        
+        Returns
+        -------
+        :class:`numpy.ndarray` or dict
+            If frmt is 'array', the result is a 2d float NumPy array of shape (nN, nX),
+            where nN is the number of nodes of the surface and nX is the number of stress
+            components, which are:
+            
+                0 : :math:`$\sigma_{x}$` stress at the top, from bending
+                
+                1 : :math:`$\sigma_{y}$` stress at the top, from bending
+                
+                2 : :math:`$\tau_{xy}$` stress at the top, from bending
+                
+                3 : :math:`$\sigma_{x}$` stress at the bottom, from bending
+                
+                4 : :math:`$\sigma_{y}$` stress at the bottom, from bending
+                
+                5 : :math:`$\tau_{xy}$` stress at the bottom, from bending
+                
+                6 : max :math:`$\sigma_{x}$` stress from stretching
+                
+                7 : max :math:`$\sigma_{y}$` stress from stretching
+                
+                8 : max :math:`$\tau_{xy}$` stress from stretching
+                
+                9 : max :math:`$\tau_{xz}$` shear stress 
+                
+                10 : max :math:`$\tau_{yz}$` shear stress
+                
+                11 : max :math:`$\tau_{xz,r}$` rolling shear stress 
+                
+                12 : max :math:`$\tau_{yz,r}$` rolling shear stress 
+            
+            If frmt is 'dict', the stresses are returned as a dictionary of 1d NumPy arrays,
+            where indices from 0 to 12 are the keys of the values at the corders.
+        
+        """
         #assert self.IsXLAM, "This is not an XLAM domain!"
 
         def ad2d(arr): return {i: arr[:, i] for i in range(13)}
@@ -193,7 +283,6 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
             stresses._get_case_or_component(case=case, combination=combination,
                                             LoadCaseId=LoadCaseId,
                                             LoadCombinationId=LoadCombinationId)
-
         config = dict(
             LoadCaseId=LoadCaseId,
             LoadCombinationId=LoadCombinationId,
@@ -215,9 +304,48 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
             return ad2d(res)
         return res
 
-    def critical_xlam_efficiency(self, *args, CombinationType=None,
-                                 AnalysisType=None, Component=None,
-                                 MinMaxType=None, **kwargs):
+    def critical_xlam_efficiency(self, *args, CombinationType:int=7,
+                                 AnalysisType:int=0, Component=4,
+                                 MinMaxType:int=1, **kwargs):
+        """
+        Returns the critical efficiency of a component, and also data on 
+        the combination that yields it.
+        
+        Parameters
+        ----------
+        MinMaxType : EMinMaxType, Optional
+            0 for min, 1 for max, 2 for minmax. Default is 1.
+            
+        Component : EXLAMSurfaceEfficiency, Optional 
+            Default is 4, which refers to the maximum overall efficiency.
+        
+        CombinationType : ECombinationType, Optional
+            Default is 7 wich refers to the worst case of ULS combinations.
+            
+        AnalysisType : EAnalysisType, Optional
+            Default is 0 which refers to linear statics.
+            
+        Notes
+        -----
+        It is the user who has to make sure that this call is only called on surfaces,
+        that belong to an XLAM domain.
+        
+        Returns
+        -------
+        :class:`numpy.ndarray`
+            A 2d float NumPy array of shape (nN, nX), where nN is the number of nodes 
+            of the surface and nX is the number of efficiency components, which are:
+            
+                0 : M - N - 0
+                
+                1 : M - N - 90
+                
+                2 : V - T
+                
+                3 : Vr - N
+                
+                4 : max     
+        """
         axm = self.model
         stresses = axm.Results.Stresses
         params = dict(
@@ -251,27 +379,33 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
 
     @property
     def tr(self) -> Array:
+        """Returns the transformation matrices for all surfaces."""
         return self.transformation_matrices()
 
     @property
     def t(self) -> Array:
+        """Returns the thicknessws of all surfaces."""
         k = 'Thickness'
         return np.array(self.get_surface_attributes(fields=[k])[k])
 
     @property
     def n(self) -> Array:
+        """Returns the normal vectors of all surfaces."""
         return self.normals()
 
     @property
     def frames(self) -> Array:
+        """Returns the transformation matrices for all surfaces."""
         return self.transformation_matrices()
 
     @property
     def attributes(self):
+        """Returns the attributes of all surfaces as a dictionary."""
         return self.get_attributes()
 
     @property
     def surface_attributes(self):
+        """Returns the surface attributes of all surfaces as a dictionary."""
         return self.get_surface_attributes()
 
     def topology(self, *args,  i=None) -> TopologyArray:

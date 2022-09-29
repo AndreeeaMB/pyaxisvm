@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict
+from typing import List, Dict, Union
 
 import axisvm.com.tlb as axtlb
 
@@ -8,6 +9,9 @@ from .axsurface import SurfaceMixin
 
 
 __all__ = ['IAxisVMNode', 'IAxisVMNodes']
+
+
+NoneType = type(None)
 
 
 class IAxisVMNode(AxisVMModelItem, SurfaceMixin):
@@ -20,10 +24,10 @@ class IAxisVMNodes(AxisVMModelItems, SurfaceMixin):
 
     __itemcls__ = IAxisVMNode
 
-    def get_record(self, *args, interactive=False, **kwargs) -> axtlb.RNode:
+    def get_record(self, *args, interactive=False, **kwargs) -> Union[axtlb.RNode, List[axtlb.RNode]]:
         """
-        Returns a list of node records, which can be specified by keyword
-        arguments. It can be used to turn an arbitrary specification
+        Returns a list of node records or a single record, which can be specified 
+        by keyword arguments. It can be used to turn an arbitrary specification
         of nodes in an embedded situation into a list of node recirds.
         For that reason it includes trivial keys. Individual elements
         can be specified, but the result is always a list. If there are
@@ -52,6 +56,11 @@ class IAxisVMNodes(AxisVMModelItems, SurfaceMixin):
                 
                 UIDs : list of int, a sequence of nodeUIDs
 
+        Returns
+        -------
+        Union[axtlb.RNode, List[axtlb.RNode]]
+            A single record, or a list of records, depending on the input.
+            
         """
         Model = self.model
         nodes = None
@@ -104,9 +113,10 @@ class IAxisVMNodes(AxisVMModelItems, SurfaceMixin):
         self.model.StartModalSelection(msg, deletecurrent, 'seltNode')
         return self.get_selected(interactive=False)
 
-    def get_selected(self, interactive=False, msg: str = None):
+    def get_selected(self, interactive=False, msg: str = None) -> Union[dict, NoneType]:
         """
-        Returns a dictionary of nodes mapping nodeIDs to Nodes.
+        Returns a dictionary of nodes mapping node indices to node records,
+        or None if the selection is invalid.
         """
         Model = self.model._wrapped
         try:
@@ -118,31 +128,46 @@ class IAxisVMNodes(AxisVMModelItems, SurfaceMixin):
             else:
                 return None
 
-    def get_IDs(self, *args, interactive=False, **kwargs):
+    def get_indices(self, *args, interactive=False, **kwargs) -> List[int]:
         """
-        Returns a list of integers, which can be specified by keyword
-        arguments. It can be used to turn an arbitrary specification
-        of nodeIDs in an embedded situation into a list of nodeIDs.
-        For that reason it includes trivial keys. Individual elements
-        can be specified, but the result is always a list. If there are
-        no valid specifiers, the function either gets the selected nodes
+        Returns a list of integers, depending on the arguments. 
+        It can be used to turn an arbitrary specification of nodes into a list 
+        of indices. Individual items can be specified, but the result is always a list. 
+        If there are no valid specifiers, the function either gets the selected nodes
         from AxisVM, or if there is none, a selection dialog shows up in
         AxisVM and the function is called again with valid specifiers
         emerging from any of these scenarios.
         
         Possible keys and values
-            node : a single domain, returns [node]
-            nodes : a list of nodes, returns nodes
-            ID : int, a single nodeID
-            IDs : [int], a sequence of nodeIDs
-            UID : int, a single nodeUID
-            UIDs : [int], a sequence of nodeUIDs
         
-        For example
-            nodeIDs = get_IDs(Model,**kwargs)
-        or simply
-            nodeIDs = get_IDs(Model)
-        to get nodeIDs from a selection in AxisVM.
+            node : a single node record
+        
+            nodes : a list of node records
+        
+            ID : int, a single node index
+        
+            IDs : [int], a sequence of node indices
+        
+            UID : int, a single unique node index
+        
+            UIDs : [int], a sequence of unique node indices
+        
+        Note
+        ----
+        The call accepts the trivial keys 'ID' and 'IDs' to support automatization,
+        where demand for trivial inputs is possible. 
+        
+        Returns
+        -------
+        List[int]
+        
+        Examples
+        --------
+        To get indices of nodes from a selection in AxisVM.
+        
+        >>> axvm = start_AxisVM(visible=True, daemon=True)
+        >>> axvm.model = examples.download_bernoulli_grid()
+        >>> axvm.model.Nodes.get_indices()
         
         """
         nodeIDs = None
@@ -168,13 +193,13 @@ class IAxisVMNodes(AxisVMModelItems, SurfaceMixin):
             raise "Ivalid specification of nodeIDs!"
         finally:
             if nodeIDs is None:
-                nodeIDs = self.get_selected_IDs(interactive=interactive)
+                nodeIDs = self.get_selected_indices(interactive=interactive)
                 if nodeIDs is None and 'all' in args:
                     nNode = Model.Nodes.Count
                     nodeIDs = [i for i in range(1, nNode+1)]
             return nodeIDs
 
-    def select_IDs(self, clear=True, msg: str = None):
+    def select_indices(self, clear=True, msg: str = None):
         """
         Shows up a selectiondialog for nodes in AxisVM and returns the selected
         nodeIDs if succesful.
@@ -194,9 +219,9 @@ class IAxisVMNodes(AxisVMModelItems, SurfaceMixin):
         Model = self.model
         deletecurrent = 1 if clear else 0
         Model.StartModalSelection(msg, deletecurrent, 'seltNode')
-        return self.get_selected_IDs(interactive=False)
+        return self.get_selected_indices(interactive=False)
 
-    def get_selected_IDs(self, interactive=False):
+    def get_selected_indices(self, interactive=False):
         """
         Returns a list of nodeIDs. The result is always iterable,
         even if it contains only one item.
@@ -207,20 +232,19 @@ class IAxisVMNodes(AxisVMModelItems, SurfaceMixin):
             return Model.Nodes.GetSelectedItemIds()[0]
         except Exception:
             if interactive:
-                return self.select_IDs(msg='Select one or more nodes!')
+                return self.select_indices(msg='Select one or more nodes!')
             else:
                 return None
 
-    def get_connected_surfaceIDs(self, flatten=False, as_dict=False, **kwargs):
+    def connected_surfaces(self, flatten:bool=False, as_dict:bool=False, **kwargs) -> Union[Dict, List]:
         """
         Returns surfaces connected by the specified nodes. For the details of
-        specification of nodes see the documentation of function : get_IDs.
-        If as_dict == True, result is a dictionary that maps nodeIDs to lists
-        of surfaceIDs.
-        
+        specification of nodes see the documentation of :func:`get_indices`.
+        If ``as_dict == True``, the result is a dictionary that maps node indices 
+        to lists of surfaces.
         """
         Model = self.model
-        nodeIDs = self.get_IDs(**kwargs)
+        nodeIDs = self.get_indices(**kwargs)
         assert nodeIDs is not None, "Invalid specification of nodes!"
         if as_dict:
             return OrderedDict({nID: Model.Nodes.GetConnectedSurfaces(nID)[0]

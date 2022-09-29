@@ -32,10 +32,7 @@ class IAxisVMApplication(AxWrapper):
 
     @property
     def Models(self):
-        """
-        Returns a pointer object to the `IAxisVMModels` COM interface.
-
-        """
+        """Returns a pointer object to the `IAxisVMModels` COM interface."""
         return IAxisVMModels(app=self, wrap=self._wrapped.Models)
 
     @property

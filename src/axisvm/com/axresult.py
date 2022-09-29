@@ -62,17 +62,17 @@ class AxisVMResultItem(AxWrapper):
 
 
 class IAxisVMDisplacements(AxisVMResultItem):
-    """Wrapper for the `IAxisVMResults` COM interface."""
+    """Wrapper for the `IAxisVMDisplacements` COM interface."""
     ...
 
 
 class IAxisVMForces(AxisVMResultItem):
-    """Wrapper for the `IAxisVMResults` COM interface."""
+    """Wrapper for the `IAxisVMForces` COM interface."""
     ...
 
 
 class IAxisVMStresses(AxisVMResultItem):
-    """Wrapper for the `IAxisVMResults` COM interface."""
+    """Wrapper for the `IAxisVMStresses` COM interface."""
     ...
 
 
