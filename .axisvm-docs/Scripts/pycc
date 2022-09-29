@@ -1,0 +1,3 @@
+#!d:\projects\dewloosh\pyaxisvm\.axisvm-docs\scripts\python.exe
+from numba.pycc import main
+main()

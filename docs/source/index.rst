@@ -23,25 +23,29 @@ and readable code.
 .. include:: getting_started.md
     :parser: myst_parser.sphinx_
 
-.. include:: _notebooks/basic_usage
+.. include:: tips_and_tricks.md
+    :parser: myst_parser.sphinx_
+
+.. toctree::
+    :maxdepth: 3
+
+    notebooks
 
 .. toctree::
     :maxdepth: 4
-    :glob:
-    :hidden:
 
-    _notebooks/basic_usage
-    auto_examples/index.rst
+    api
 
 .. toctree::
-   :maxdepth: 2
-   :glob:
-   :hidden:
- 
-   tips_and_tricks
-   api
-   downloads
-   
+    :maxdepth: 1
+
+    downloads
+
+.. toctree::
+    :maxdepth: 3
+
+    auto_examples/index.rst
+
 Indices and tables
 ------------------
 

@@ -5,6 +5,7 @@ appdirs
 dewloosh.core
 dewloosh.mpl
 dewloosh.plotly
+nbformat
 comtypes>=1.1.11
 numpy
 pandas
