@@ -1,6 +1,5 @@
 setuptools
 wheel
-appdirs
 dewloosh.core
 dewloosh.mpl
 dewloosh.plotly
