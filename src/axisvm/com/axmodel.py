@@ -17,33 +17,10 @@ from .axline import IAxisVMLines
 from .axwindow import IAxisVMWindows
 from .axresult import IAxisVMResults
 from .axmaterial import IAxisVMMaterials
+from .axcalculation import IAxisVMCalculation
 
 
 __all__ = ['IAxisVMModels', 'IAxisVMModel']
-
-
-class IAxisVMCalculation(AxisVMModelItems):
-    """Wrapper for the `IAxisVMCalculation` COM interface."""
-
-    def LinearAnalysis(self, *args, interact=False, show=False, autocorrect=True):
-        if len(args) > 0 and isinstance(args[0], int):
-            itype = args[0]
-        else:
-            import axisvm.com.tlb as axtlb
-            if interact:
-                itype = axtlb.cuiUserInteraction
-            else:
-                if show and autocorrect:
-                    itype = axtlb.cuiNoUserInteractionWithAutoCorrect
-                elif not show and autocorrect:
-                    itype = axtlb.cuiNoUserInteractionWithoutAutoCorrect
-                elif not show and autocorrect:
-                    itype = axtlb.cuiNoUserInteractionWithAutoCorrectNoShow
-                elif not show and not autocorrect:
-                    itype = axtlb.cuiNoUserInteractionWithoutAutoCorrectNoShow
-                else:
-                    raise NotImplementedError
-        return self._wrapped.LinearAnalysis(itype)
 
 
 class IAxisVMModel(AxWrapper):
@@ -55,14 +32,17 @@ class IAxisVMModel(AxWrapper):
 
     @property
     def Nodes(self) -> IAxisVMNodes:
+        """Returns a pointer object to the `IAxisVMNodes` COM interface."""
         return IAxisVMNodes(model=self, wrap=self._wrapped.Nodes)
 
     @property
     def Members(self) -> IAxisVMMembers:
+        """Returns a pointer object to the `IAxisVMMembers` COM interface."""
         return IAxisVMMembers(model=self, wrap=self._wrapped.Members)
 
     @property
     def Domains(self) -> IAxisVMDomains:
+        """Returns a pointer object to the `IAxisVMDomains` COM interface."""
         return IAxisVMDomains(model=self, wrap=self._wrapped.Domains)
 
     @property
@@ -71,30 +51,38 @@ class IAxisVMModel(AxWrapper):
 
     @property
     def Lines(self) -> IAxisVMLines:
+        """Returns a pointer object to the `IAxisVMLines` COM interface."""
         return IAxisVMLines(model=self, wrap=self._wrapped.Lines)
 
     @property
     def Surfaces(self) -> IAxisVMSurfaces:
+        """Returns a pointer object to the `IAxisVMSurfaces` COM interface."""
         return IAxisVMSurfaces(model=self, wrap=self._wrapped.Surfaces)
 
     @property
     def Windows(self) -> IAxisVMWindows:
+        """Returns a pointer object to the `IAxisVMWindows` COM interface."""
         return IAxisVMWindows(model=self, wrap=self._wrapped.Windows)
 
     @property
     def Results(self) -> IAxisVMResults:
+        """Returns a pointer object to the `IAxisVMResults` COM interface."""
         return IAxisVMResults(model=self, wrap=self._wrapped.Results)
 
     @property
     def Calculation(self) -> IAxisVMCalculation:
+        """Returns a pointer object to the `IAxisVMCalculation` COM interface."""
         return IAxisVMCalculation(model=self, wrap=self._wrapped.Calculation)
 
     @property
     def Materials(self) -> IAxisVMMaterials:
+        """Returns a pointer object to the `IAxisVMMaterials` COM interface."""
         return IAxisVMMaterials(model=self, wrap=self._wrapped.Materials)
 
     @property
-    def MeshSurfaceIds(self):
+    def MeshSurfaceIds(self) -> np.ndarray:
+        """Returns the indices of the surfaces of all domains in the model
+        as a :class:`numpy.ndarray`."""
         d = self.Domains
         dc = d.Count
         def fnc(i): return d[i+1].MeshSurfaceIds
@@ -128,6 +116,19 @@ class IAxisVMModel(AxWrapper):
         return PointCloud(coords, inds=ids, frame=frame)
 
     def coordinates(self, ids=None) -> np.ndarray:
+        """
+        Returns the coordinates of the points in the model as a :class:`numpy.ndarray`. 
+        
+        Parameters
+        ----------
+        ids : int or :class:`numpy.ndarray`, Optional
+            Indices of points, whose coordinates are to be returned. If there are no
+            indices specified, coordinates for all points are returned. Default is None.
+            
+        Returns
+        -------
+        :class:`polymesh.PointCloud`
+        """
         return self.points(ids).show()
 
     def topology(self) -> TopologyArray:
@@ -143,14 +144,41 @@ class IAxisVMModel(AxWrapper):
             def fnc_mid(i): return list(s[i].GetMidPoints()[0])
             def fnc(i): return fnc_corner(i) + fnc_mid(i)
             res.append(TopologyArray(ak.Array(list(map(fnc, sIDs)))))"""
-
         if len(res) >= 2:
             return np.vstack(res)
         return res[0] if len(res) == 1 else None
 
-    def dof_solution(self, *args, DisplacementSystem=None, LoadCaseId=None,
+    def dof_solution(self, *args, DisplacementSystem=1, LoadCaseId=None,
                      LoadLevelOrModeShapeOrTimeStep=None, LoadCombinationId=None,
-                     case=None, combination=None, **kwargs):
+                     case=None, combination=None, **kwargs) -> np.ndarray:
+        """
+        Returns degree of freedom solution for the whole model as a :class:`numpy.ndarray`.
+        
+        Parameters
+        ----------
+        DisplacementSystem : int, Optional
+            0 for local, 1 for global. Default is 1.
+        
+        LoadCaseId : int, Optional
+            Default is None.
+            
+        LoadLevelOrModeShapeOrTimeStep : int, Optional
+            Default is None.
+            
+        LoadCombinationId : int, Optional
+            Default is None.
+            
+        case : str, Optional
+            The name of a loadcase. Default is None.
+        
+        combination : str, Optional
+            The name of a load combination. Default is None.
+        
+        Returns
+        -------
+        :class:`numpy.ndarray`
+        
+        """
         if case is not None:
             LoadCombinationId = None
             if isinstance(case, str):
@@ -195,12 +223,26 @@ class IAxisVMModel(AxWrapper):
         return np.array(list(map(RDisplacementValues2list, recs)))
 
     def generalized_surface_forces(self, *args, **kwargs):
+        """Returns internal forces and moments for all surfaces in the model."""
         return self.Surfaces.generalized_surface_forces(*args, **kwargs)
 
     def surface_stresses(self, *args, **kwargs):
+        """Returns stresses for all surfaces in the model."""
         return self.Surfaces.surface_stresses(*args, **kwargs)
 
     def critical_xlam_data(self, *args, CombinationType=None,  AnalysisType=0, **kwargs):
+        """
+        Returns critical XLAM data.
+        
+        Parameters
+        ----------
+        CombinationType : int, Optional
+            Default is None.
+        
+        AnalysisType : int, Optional
+            Default is 0.
+                
+        """
         Domains = self.Domains
         Surfaces = self.Surfaces
         dparams = dict(

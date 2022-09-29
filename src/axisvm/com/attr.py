@@ -4,11 +4,21 @@ import pandas as pd
 
 
 class AxisVMAttributes(dict):
+    """
+    A class to handle attributes.
+    
+    """
     
     def to_pandas(self, nested=False) -> pd.DataFrame:
+        """
+        Returns the attributes as a Pandas DataFrame.
+        """
         return pd.DataFrame.from_dict(self)
 
     def to_awkward(self, nested=False) -> ak.Record:
+        """
+        Returns the attributes as an awkward Record.
+        """
         return ak.Record(self)
     
 
