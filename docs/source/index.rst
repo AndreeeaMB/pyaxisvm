@@ -1,7 +1,7 @@
 .. image:: AxisVM_logo.bmp
 
-PyAxisVM - The official python package of **AxisVM**
-====================================================
+PyAxisVM - The official python package for **AxisVM**
+=====================================================
 
 ----
 
@@ -38,7 +38,7 @@ and readable code.
     notebooks
 
 .. toctree::
-    :maxdepth: 4
+    :maxdepth: 5
 
     api
 

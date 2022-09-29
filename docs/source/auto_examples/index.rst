@@ -28,6 +28,40 @@ Examples Gallery
 
 .. raw:: html
 
+    <div class="sphx-glr-thumbcontainer" tooltip="Make a 2d contour plot about the results of a domain. This example requires  matplotlib to be i...">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_1_domain_results_thumb.png
+    :alt: Plot Domain Results with `Matplotlib`
+
+  :ref:`sphx_glr_auto_examples_plot_1_domain_results.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Plot Domain Results with `Matplotlib`</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="Make a 2d contour plot about the results of a domain. This example requires  matplotlib to be i...">
+
+.. only:: html
+
+  .. image:: /auto_examples/images/thumb/sphx_glr_plot_2_domain_stresses_thumb.png
+    :alt: Plot Domain Stresses with `Matplotlib`
+
+  :ref:`sphx_glr_auto_examples_plot_2_domain_stresses.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Plot Domain Stresses with `Matplotlib`</div>
+    </div>
+
+
+.. raw:: html
+
     </div>
 
 
@@ -35,6 +69,8 @@ Examples Gallery
    :hidden:
 
    /auto_examples/plot_0_grid1
+   /auto_examples/plot_1_domain_results
+   /auto_examples/plot_2_domain_stresses
 
 
 .. only:: html

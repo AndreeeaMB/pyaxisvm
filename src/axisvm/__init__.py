@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-__version__ = "v1.0.5"
+__version__ = "v1.0.6b"
 
 import os
 import appdirs
