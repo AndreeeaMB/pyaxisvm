@@ -23,11 +23,14 @@ and readable code.
 .. include:: getting_started.md
     :parser: myst_parser.sphinx_
 
+.. include:: _notebooks/basic_usage
+
 .. toctree::
     :maxdepth: 4
     :glob:
     :hidden:
 
+    _notebooks/basic_usage
     auto_examples/index.rst
 
 .. toctree::
