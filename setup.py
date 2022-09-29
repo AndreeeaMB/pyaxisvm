@@ -44,7 +44,7 @@ setuptools.setup(
         'License :: OSI Approved :: MIT License',   
         'Programming Language :: Python :: 3',
     ],
-    python_requires='>=3.6',                             
+    python_requires='>=3.7',                             
     package_dir={'':'src'},
 	install_requires=required
 )
