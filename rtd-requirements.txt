@@ -1,0 +1,12 @@
+setuptools
+wheel
+appdirs
+dewloosh.core
+dewloosh.mpl
+dewloosh.plotly
+nbformat
+numpy
+pandas
+latexdocs
+awkward
+pyvista
