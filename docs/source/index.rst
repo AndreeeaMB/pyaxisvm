@@ -1,5 +1,11 @@
-PyAxisVM - The official python package of **AxisVM**
-====================================================
+.. image:: AxisVM_logo.bmp
+
+PyAxisVM - The official python package for **AxisVM**
+=====================================================
+
+----
+
+.. image:: gt40.png
 
 The **PyAxisVM** project offers a high-level interface to **AxisVM**, 
 making its operations available directly from Python. It builds on top of 
@@ -23,25 +29,29 @@ and readable code.
 .. include:: getting_started.md
     :parser: myst_parser.sphinx_
 
-.. include:: _notebooks/basic_usage
+.. include:: tips_and_tricks.md
+    :parser: myst_parser.sphinx_
 
 .. toctree::
-    :maxdepth: 4
-    :glob:
-    :hidden:
+    :maxdepth: 3
 
-    _notebooks/basic_usage
+    notebooks
+
+.. toctree::
+    :maxdepth: 5
+
+    api
+
+.. toctree::
+    :maxdepth: 1
+
+    downloads
+
+.. toctree::
+    :maxdepth: 3
+
     auto_examples/index.rst
 
-.. toctree::
-   :maxdepth: 2
-   :glob:
-   :hidden:
- 
-   tips_and_tricks
-   api
-   downloads
-   
 Indices and tables
 ------------------
 

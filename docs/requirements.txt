@@ -8,6 +8,8 @@ sphinxcontrib-svg2pdfconverter
 sphinx-rtd-theme
 networkx
 plotly
+nbformat
 furo
 pypdfium2
 matplotlib
+memory_profiler

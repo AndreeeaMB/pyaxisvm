@@ -215,31 +215,31 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
             where nN is the number of nodes of the surface and nX is the number of stress
             components, which are:
             
-                0 : :math:`$\sigma_{x}$` stress at the top, from bending
+                0 : :math:`\\sigma_{x}` stress at the top, from bending
                 
-                1 : :math:`$\sigma_{y}$` stress at the top, from bending
+                1 : :math:`\\sigma_{y}` stress at the top, from bending
                 
-                2 : :math:`$\tau_{xy}$` stress at the top, from bending
+                2 : :math:`\\tau_{xy}` stress at the top, from bending
                 
-                3 : :math:`$\sigma_{x}$` stress at the bottom, from bending
+                3 : :math:`\\sigma_{x}` stress at the bottom, from bending
                 
-                4 : :math:`$\sigma_{y}$` stress at the bottom, from bending
+                4 : :math:`\\sigma_{y}` stress at the bottom, from bending
                 
-                5 : :math:`$\tau_{xy}$` stress at the bottom, from bending
+                5 : :math:`\\tau_{xy}` stress at the bottom, from bending
                 
-                6 : max :math:`$\sigma_{x}$` stress from stretching
+                6 : :math:`\\sigma_{x, max}` stress from stretching
                 
-                7 : max :math:`$\sigma_{y}$` stress from stretching
+                7 : :math:`\\sigma_{y, max}` stress from stretching
                 
-                8 : max :math:`$\tau_{xy}$` stress from stretching
+                8 : :math:`\\tau_{xy, max}` stress from stretching
                 
-                9 : max :math:`$\tau_{xz}$` shear stress 
+                9 : :math:`\\tau_{xz, max}` shear stress 
                 
-                10 : max :math:`$\tau_{yz}$` shear stress
+                10 : :math:`\\tau_{yz, max}` shear stress
                 
-                11 : max :math:`$\tau_{xz,r}$` rolling shear stress 
+                11 : :math:`\\tau_{xz, r, max}` rolling shear stress 
                 
-                12 : max :math:`$\tau_{yz,r}$` rolling shear stress 
+                12 : :math:`\\tau_{yz, r, max}` rolling shear stress 
             
             If frmt is 'dict', the stresses are returned as a dictionary of 1d NumPy arrays,
             where indices from 0 to 12 are the keys of the values at the corders.
