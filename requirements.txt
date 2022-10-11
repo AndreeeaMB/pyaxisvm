@@ -12,3 +12,4 @@ pandas
 latexdocs
 awkward
 pyvista
+polymesh>=0.0.5
