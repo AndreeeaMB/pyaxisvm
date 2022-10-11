@@ -2,7 +2,7 @@
 
 # **PyAxisVM**
 
-The official python package of **AxisVM**, a Structural Analysis & Design Software.
+The official python package of **AxisVM**, a Structural Analysis & Design Software. Read the docs _[***here***](https://axisvm.github.io/pyaxisvm-docs/)_.
 
 <table>
     <tr>
@@ -58,6 +58,7 @@ The **AxisVM** python package can be installed (either in a virtual enviroment o
 
 The ***AxisVM API Reference Guide*** is available in pdf format,  you can download it _[***here***](https://axisvm.eu/axisvm-downloads/#application)_.
 
+The documentation of this library is available _[***here***](https://axisvm.github.io/pyaxisvm-docs/)_.
 
 Please feel free to post issues and other questions at **PyAxisVM** Issues. This is the best place to post questions and code related to issues with this project.
 
