@@ -9,15 +9,8 @@ from axisvm.com.tlb import lbTrue as true, lbFalse as false, \
 class TestClient(unittest.TestCase):
 
     def test_client(self):
-        axvm = start_AxisVM(visible=False)
-        axvm.CloseOnLastReleased = true
-        axvm.AskCloseOnLastReleased = false
-        axvm.AskSaveOnLastReleased = false
-        axvm.ApplicationClose = acEnableNoWarning
-        modelId = axvm.Models.New()
-        axm = axvm.Models.Item[modelId]
-        #axvm.UnLoadCOMClients()
-        axvm.Quit(unload_client=False)
+        axvm = start_AxisVM(visible=False, daemon=True)
+        axvm.Quit()
            
                   
 if __name__ == "__main__":
