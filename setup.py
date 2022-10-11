@@ -40,11 +40,11 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     packages=setuptools.find_packages(where='src'),   
     classifiers=[
-        'Development Status :: 5 - Production/Stable',     
+        'Development Status :: 4 - Beta',     
         'License :: OSI Approved :: MIT License',   
         'Programming Language :: Python :: 3',
     ],
-    python_requires='>=3.6',                             
+    python_requires='>=3.7',                             
     package_dir={'':'src'},
 	install_requires=required
 )
