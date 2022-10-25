@@ -1,8 +1,6 @@
 ![alt text](https://github.com/AxisVM/DynamoToAxisVM/blob/master/Documentation/images/AxisVM%20logo.bmp)
 
-# **PyAxisVM**
-
-The official python package of **AxisVM**, a Structural Analysis & Design Software. Read the docs _[***here***](https://axisvm.github.io/pyaxisvm-docs/)_.
+# **PyAxisVM** - The official python package for **AxisVM**
 
 <table>
     <tr>
@@ -48,7 +46,7 @@ Once the enviroment is created, activate it via typing
 >>> .\venv_name\Scripts\activate
 ```
 
-The **AxisVM** python package can be installed (either in a virtual enviroment or globally) from PyPI using `pip` on Python >= 3.6:
+The **AxisVM** python package can be installed (either in a virtual enviroment or globally) from PyPI using `pip` on Python >= 3.7:
 
 ```console
 >>> pip install axisvm
