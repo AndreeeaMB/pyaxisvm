@@ -1,8 +1,6 @@
 ![alt text](https://github.com/AxisVM/DynamoToAxisVM/blob/master/Documentation/images/AxisVM%20logo.bmp)
 
-# **PyAxisVM**
-
-The official python package of **AxisVM**, a Structural Analysis & Design Software. Read the docs _[***here***](https://axisvm.github.io/pyaxisvm-docs/)_.
+# **PyAxisVM** - The official python package for **AxisVM**
 
 <table>
     <tr>
