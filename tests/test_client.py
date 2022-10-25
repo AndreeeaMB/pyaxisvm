@@ -2,8 +2,6 @@
 import unittest
 
 from axisvm.com.client import start_AxisVM
-from axisvm.com.tlb import lbTrue as true, lbFalse as false, \
-    acEnableNoWarning
 
 
 class TestClient(unittest.TestCase):
