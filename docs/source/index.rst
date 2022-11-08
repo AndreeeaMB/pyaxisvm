@@ -7,7 +7,7 @@ PyAxisVM - The official Python package for **AxisVM**
 
 .. image:: gt40.png
 
-.. warning::
+.. note::
     The documentation is under heavy development. Expect changes more often than usual,
     and enjoy what is alraeady out. This only affects the documentation, not the code base. 
     Until we het to the end of it, browse the examples and the notebooks to get a glimpse 
