@@ -3,8 +3,8 @@ wheel
 pywin32
 appdirs
 sigmaepsilon==0.0.25c
-dewloosh.mpl
-dewloosh.plotly
+dewloosh.mpl==0.0.5
+dewloosh.plotly==0.0.3
 nbformat
 comtypes==1.1.11
 pandas
