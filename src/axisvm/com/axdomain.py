@@ -13,8 +13,9 @@ from dewloosh.core import issequence
 from neumann.linalg import Vector
 from polymesh import PointCloud, CartesianFrame
 from dewloosh.mpl import triplot
-from polymesh.topo import TopologyArray, rewire
+from polymesh import TopologyArray
 from polymesh.utils import decompose
+from polymesh.utils.topology import rewire
 from neumann.linalg.sparse.utils import count_cols
 
 import axisvm

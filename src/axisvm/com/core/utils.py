@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-from polymesh.topo.tr import Q8_to_T3, T6_to_T3
+from polymesh.utils.topology.tr import Q8_to_T3, T6_to_T3
 from neumann.linalg.sparse.utils import count_cols
 
 
