@@ -3,7 +3,7 @@ import numpy as np
 import awkward as ak
 
 from polymesh import PointCloud, CartesianFrame
-from polymesh.topo import TopologyArray
+from polymesh import TopologyArray
 from neumann.linalg.sparse.utils import count_cols
 
 from .core.wrap import AxWrapper, AxisVMModelItems

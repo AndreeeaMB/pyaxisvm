@@ -2,7 +2,7 @@
 
 This notebook sums up the changes in syntax, compared to the 'raw' usage of the COM type library. Everything the API provides out of the box is still available and is working according to the _[***docs***](https://axisvm.eu/axisvm-downloads/#application)_, but the syntax of Python provides a few shortcuts to make coding easier.
 
-### **Collections and Slicing**
+## **Collections and Slicing**
 
 When accessing items of collection-like COM classes (like `IAxisVMDomains`, `IAxisVMSurfaces`, anything having an `Item` method), you can use the slicing mechanism of Python. Suppose that we have an `IAxisVMModel`  instance called `axm`. The model has several domains, each of them having the property `Weight`. Let say we want to calculate the weight of all domains. The out of box solution for this would be something like
   
@@ -12,6 +12,7 @@ for i in range(axm.Surfaces.Count):
     weights.append(axm.Surfaces.Item[i+1].Weight)
 weight = sum(weights)
 ```
+
 or using a list comprehension
 
 ```python
@@ -66,7 +67,7 @@ Furthermore, instead of typing `axm.Surfaces.Count`, you can use `len(axm.Surfac
 
 **Be aware here, that the index of the first item in any iterable COM object is 1, opposed to the zero-indexed nature of Python.**
 
-### **Context Management**
+## **Context Management**
 
 If you have some experience with AxisVM and COM, you know about the methods `BeginUpdate` and `EndUpdate`. With python, you don't need to care about this, instead you can simply use the `with` statement like this
 
@@ -76,7 +77,7 @@ with axm as model:
     ...
 ```
 
-### **Accessing the Type Library**
+## **Accessing the Type Library**
 
 When a new instace of `IAxisVMApplication` is created, the type library is generated on demand. After that, the type library can be accessed as
 
@@ -84,12 +85,13 @@ When a new instace of `IAxisVMApplication` is created, the type library is gener
 import axisvm.com.tlb as axtlb
 ```
 
-### **Daemon**
+## **Daemon**
 
 When creating a new interface, you can do it like
 
 ```python
 from axisvm.com.client import start_AxisVM
+
 axvm = start_AxisVM(visible=True, daemon=True)
 ```
 
@@ -98,6 +100,7 @@ The keyword argument `daemon=True` is a simple shortcut, equivalent to
 ```python
 from axisvm.com.client import start_AxisVM
 import axisvm.com.tlb as axtlb
+
 axapp = start_AxisVM(visible=True, daemon=False)
 axapp.CloseOnLastReleased = True
 axapp.AskCloseOnLastReleased = False

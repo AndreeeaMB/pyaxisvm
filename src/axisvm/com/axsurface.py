@@ -8,11 +8,12 @@ from functools import partial
 import awkward as ak
 
 from dewloosh.core import issequence
-from polymesh.topo import TopologyArray, unique_topo_data
-from polymesh.topo.topodata import edges_Q4
-from polymesh.tri.triutils import edges_tri
+from polymesh import TopologyArray
+from polymesh.utils.topology import unique_topo_data
+from polymesh.utils.topology.tr import edges_Q4
+from polymesh.utils.tri import edges_tri
 from dewloosh.plotly import plot_triangles_3d
-from polymesh.topo import detach as detach_mesh
+from polymesh.utils.topology import detach as detach_mesh
 
 import axisvm
 from .core.wrap import AxisVMModelItem, AxisVMModelItems
