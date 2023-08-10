@@ -8,15 +8,15 @@ from numpy import ndarray as Array
 
 import matplotlib.tri as tri
 
-from dewloosh.core import issequence
+from sigmaepsilon.core import issequence
 
-from neumann.linalg import Vector
-from polymesh import PointCloud, CartesianFrame
-from dewloosh.mpl import triplot
-from polymesh import TopologyArray
-from polymesh.utils import decompose
-from polymesh.utils.topology import rewire
-from neumann.linalg.sparse.utils import count_cols
+from sigmaepsilon.math.linalg import Vector
+from sigmaepsilon.math.linalg.sparse.utils import count_cols
+from sigmaepsilon.mesh import PointCloud, CartesianFrame
+from sigmaepsilon.mesh import TopologyArray
+from sigmaepsilon.mesh.utils import decompose
+from sigmaepsilon.mesh.utils.topology import rewire
+from sigmaepsilon.plotting.mpl import triplot
 
 import axisvm
 from .core.wrap import AxisVMModelItem, AxisVMModelItems, AxItemCollection
@@ -190,7 +190,7 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         Parameters
         ----------
         **mpl_kw : dict, Optional
-            Parameters to pass to :func:`dewloosh.mpl.triplot`
+            Parameters to pass to :func:`sigmaepsilon.plotting.mpl.triplot`
 
         """
         coords, topo, _ = self.detach_mesh(
@@ -229,7 +229,7 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
             Default is 1, which means the global system.
 
         **mpl_kw : dict, Optional
-            Parameters to pass to :func:`dewloosh.mpl.triplot`
+            Parameters to pass to :func:`sigmaepsilon.plotting.mpl.triplot`
 
         Notes
         -----
@@ -323,7 +323,7 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
             If the values should be smoothened or not. Default is False.
 
         **mpl_kw : dict, Optional
-            Parameters to pass to :func:`dewloosh.mpl.triplot`
+            Parameters to pass to :func:`sigmaepsilon.plotting.mpl.triplot`
 
         """
         assert not smoothen, "Smoothing is not available at the moment."
@@ -387,7 +387,7 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
             Default is None.
 
         **mpl_kw : dict, Optional
-            Parameters to pass to :func:`dewloosh.mpl.triplot`
+            Parameters to pass to :func:`sigmaepsilon.plotting.mpl.triplot`
             
         Import the necessary stuff,
 

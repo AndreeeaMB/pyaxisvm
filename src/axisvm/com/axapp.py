@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
 from typing import Union
-import axisvm
 
 from .core.wrap import AxWrapper
 from .axmodel import IAxisVMModel, IAxisVMModels

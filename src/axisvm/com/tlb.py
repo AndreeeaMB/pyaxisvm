@@ -11,7 +11,6 @@ def find_axisvm_tlb():
     -------
     >>> from axisvm.com.tlb import find_axisvm_tlb
     >>> axtlb = find_axisvm_tlb()
-    
     """
     from win32com.client.selecttlb import FindTlbsWithDescription
     items = FindTlbsWithDescription('AxisVM Library')

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from .wrap import AxWrapper
-from axisvm.com.tlb import IAxisVMLines
 
 __all__ = ['AxisVMModelItem', 'AxisVMModelItems']
 

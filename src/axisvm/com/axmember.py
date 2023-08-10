@@ -5,7 +5,7 @@ import numpy as np
 from numpy import ndarray as Array
 import awkward as ak
 
-from polymesh import TopologyArray
+from sigmaepsilon.mesh import TopologyArray
 
 import axisvm
 from .core.wrap import AxisVMModelItem, AxisVMModelItems
@@ -33,7 +33,7 @@ class IAxisVMMember(AxisVMModelItem):
     def member_attributes(self):
         return self.parent.get_member_attributes(self.Index)
 
-    def topology(self):
+    def topology(self) -> TopologyArray:
         lIDs = np.array(self.GetLines()[0]).flatten()
         lines = self.model.Lines.wrapped
         def foo(i): return [lines.Item[i].StartNode, lines.Item[i].EndNode]
@@ -79,7 +79,7 @@ class IAxisVMMembers(AxisVMModelItems):
     def member_attributes(self):
         return self.get_member_attributes()
 
-    def topology(self, *args, i=None):
+    def topology(self, *args, i=None) -> TopologyArray:
         axm = self.model.wrapped
         lines = axm.Lines
         members = self.wrapped

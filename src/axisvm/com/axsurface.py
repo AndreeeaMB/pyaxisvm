@@ -7,13 +7,13 @@ from functools import partial
 
 import awkward as ak
 
-from dewloosh.core import issequence
-from polymesh import TopologyArray
-from polymesh.utils.topology import unique_topo_data
-from polymesh.utils.topology.tr import edges_Q4
-from polymesh.utils.tri import edges_tri
-from dewloosh.plotly import plot_triangles_3d
-from polymesh.utils.topology import detach as detach_mesh
+from sigmaepsilon.core import issequence
+from sigmaepsilon.mesh import TopologyArray
+from sigmaepsilon.mesh.utils.topology import unique_topo_data
+from sigmaepsilon.mesh.utils.topology.tr import edges_Q4
+from sigmaepsilon.mesh.utils.tri import edges_tri
+from sigmaepsilon.mesh.utils.topology import detach as detach_mesh
+from sigmaepsilon.plotting.plotly import plot_triangles_3d
 
 import axisvm
 from .core.wrap import AxisVMModelItem, AxisVMModelItems
