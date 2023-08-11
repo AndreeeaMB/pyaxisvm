@@ -30,29 +30,48 @@ def RMatrix3x3toNumPy(RMatrix) -> ndarray:
 
 
 def RStiffness2dict(r) -> dict:
-    return dict(x=r.x, y=r.y, z=r.z,
-                xx=r.xx, yy=r.yy, zz=r.zz)
+    return dict(x=r.x, y=r.y, z=r.z, xx=r.xx, yy=r.yy, zz=r.zz)
+
 
 # %%
 
 
-def xyz(r) -> list: return [r.x, r.y, r.z]
+def xyz(r) -> list:
+    return [r.x, r.y, r.z]
 
 
 def sfcT6(r) -> list:
-    return list(map(xyz, [
-        r.pContourPoint1, r.pContourPoint2, r.pContourPoint3,
-        r.pContourLineMidPoint1, r.pContourLineMidPoint2,
-        r.pContourLineMidPoint3
-    ]))
+    return list(
+        map(
+            xyz,
+            [
+                r.pContourPoint1,
+                r.pContourPoint2,
+                r.pContourPoint3,
+                r.pContourLineMidPoint1,
+                r.pContourLineMidPoint2,
+                r.pContourLineMidPoint3,
+            ],
+        )
+    )
 
 
 def sfcQ8(r) -> list:
-    return list(map(xyz, [
-        r.pContourPoint1, r.pContourPoint2, r.pContourPoint3,
-        r.pContourPoint4, r.pContourLineMidPoint1, r.pContourLineMidPoint2,
-        r.pContourLineMidPoint3, r.pContourLineMidPoint4
-    ]))
+    return list(
+        map(
+            xyz,
+            [
+                r.pContourPoint1,
+                r.pContourPoint2,
+                r.pContourPoint3,
+                r.pContourPoint4,
+                r.pContourLineMidPoint1,
+                r.pContourLineMidPoint2,
+                r.pContourLineMidPoint3,
+                r.pContourLineMidPoint4,
+            ],
+        )
+    )
 
 
 def RSurfaceCoordinates2list(r):
@@ -62,12 +81,21 @@ def RSurfaceCoordinates2list(r):
 def RDisplacementValues2list(r):
     return [r.ex, r.ey, r.ez, r.Fx, r.Fy, r.Fz]
 
+
 # %%
 
 
 def getsfv(sfv) -> list:
-    return [sfv.sfvNx, sfv.sfvNy, sfv.sfvNxy, sfv.sfvMx,
-            sfv.sfvMy, sfv.sfvMxy, sfv.sfvVxz, sfv.sfvVyz]
+    return [
+        sfv.sfvNx,
+        sfv.sfvNy,
+        sfv.sfvNxy,
+        sfv.sfvMx,
+        sfv.sfvMy,
+        sfv.sfvMxy,
+        sfv.sfvVxz,
+        sfv.sfvVyz,
+    ]
 
 
 def sfvT6(rec) -> list:
@@ -97,23 +125,34 @@ def sfvQ8(rec) -> list:
 def RSurfaceForces2list(rec) -> list:
     return sfvT6(rec) if rec.ContourPointCount == 3 else sfvQ8(rec)
 
+
 # %%
 
 
 def get_stresses(rec) -> list:
-    return [rec.ssvSxx, rec.ssvSyy, rec.ssvSxy, rec.ssvSxz, rec.ssvSyz,
-            rec.ssvSVM, rec.ssvS1, rec.ssvS2, rec.ssvAs]
+    return [
+        rec.ssvSxx,
+        rec.ssvSyy,
+        rec.ssvSxy,
+        rec.ssvSxz,
+        rec.ssvSyz,
+        rec.ssvSVM,
+        rec.ssvS1,
+        rec.ssvS2,
+        rec.ssvAs,
+    ]
 
 
 def get_ssv(rec, mode=None) -> list:
     if mode is None:
-        return list(map(lambda r: get_stresses(r),
-                        [rec.ssvBottom, rec.ssvMiddle, rec.ssvTop]))
-    if mode == 't':
+        return list(
+            map(lambda r: get_stresses(r), [rec.ssvBottom, rec.ssvMiddle, rec.ssvTop])
+        )
+    if mode == "t":
         return get_stresses(rec.ssvTop)
-    if mode == 'm':
+    if mode == "m":
         return get_stresses(rec.ssvMiddle)
-    if mode == 'b':
+    if mode == "b":
         return get_stresses(rec.ssvBottom)
 
 
@@ -142,16 +181,24 @@ def ssvQ8(rec, mode=None) -> list:
 
 
 def RSurfaceStresses2list(rec, mode=None) -> list:
-    return ssvT6(rec, mode=mode) if rec.ContourPointCount == 3 else ssvQ8(rec, mode=mode)
+    return (
+        ssvT6(rec, mode=mode) if rec.ContourPointCount == 3 else ssvQ8(rec, mode=mode)
+    )
 
 
 # %%
 
+
 def _get_lfv(lfv) -> list:
     return [
-        lfv.lfvNx, lfv.lfvVy, lfv.lfvVz, 
-        lfv.lfvTx, lfv.lfvMy, lfv.lfvMz,
-        lfv.lfvMyD]
+        lfv.lfvNx,
+        lfv.lfvVy,
+        lfv.lfvVz,
+        lfv.lfvTx,
+        lfv.lfvMy,
+        lfv.lfvMz,
+        lfv.lfvMyD,
+    ]
 
 
 def RLineForceValues2list(rec) -> list:
@@ -160,11 +207,23 @@ def RLineForceValues2list(rec) -> list:
 
 # %%
 
+
 def get_xssv(rec) -> list:
-    return [rec.xssvSxx_m_T, rec.xssvSyy_m_T, rec.xssvSxy_m_T,
-            rec.xssvSxx_m_B, rec.xssvSyy_m_B, rec.xssvSxy_m_B,
-            rec.xssvSxx_n, rec.xssvSyy_n, rec.xssvSxy_n,
-            rec.xssvSxz_max, rec.xssvSyz_max, rec.xssvSrx_max, rec.xssvSry_max]
+    return [
+        rec.xssvSxx_m_T,
+        rec.xssvSyy_m_T,
+        rec.xssvSxy_m_T,
+        rec.xssvSxx_m_B,
+        rec.xssvSyy_m_B,
+        rec.xssvSxy_m_B,
+        rec.xssvSxx_n,
+        rec.xssvSyy_n,
+        rec.xssvSxy_n,
+        rec.xssvSxz_max,
+        rec.xssvSyz_max,
+        rec.xssvSrx_max,
+        rec.xssvSry_max,
+    ]
 
 
 def xssvT6(rec) -> list:
@@ -203,9 +262,9 @@ def get_xlam_strs_comb(resobj, cid, step, atype, i):
     return resobj.GetXLAMSurfaceStressesByLoadCombinationId(i, cid, step, atype)[0]
 
 
-
 def get_xsev(rec) -> list:
-    return [rec.xsev_M_N_0, rec.xsev_M_N_90, rec.xsev_V_T,  rec.xsev_Vr_N, rec.xsev_Max]
+    return [rec.xsev_M_N_0, rec.xsev_M_N_90, rec.xsev_V_T, rec.xsev_Vr_N, rec.xsev_Max]
+
 
 def xsevT6(rec) -> list:
     return [
@@ -233,6 +292,7 @@ def xsevQ8(rec) -> list:
 
 def RXLAMSurfaceEfficiencies2list(rec) -> list:
     return xsevT6(rec) if rec.ContourPointCount == 3 else xsevQ8(rec)
+
 
 def get_xlam_effs_crit(resobj, **params) -> list:
     return resobj.GetCriticalXLAMSurfaceEfficiencies(**params)[0]
@@ -270,8 +330,9 @@ def triangulate(topo, data=None):
             if data is None:
                 _, T3a = Q8_to_T3(None, topo[i8].to_numpy())
             else:
-                _, T3a, data_a = Q8_to_T3(None, topo[i8].to_numpy(),
-                                          data=data[i8].to_numpy())
+                _, T3a, data_a = Q8_to_T3(
+                    None, topo[i8].to_numpy(), data=data[i8].to_numpy()
+                )
         except Exception:
             if data is None:
                 _, T3a = Q8_to_T3(None, topo[i8])
@@ -281,8 +342,9 @@ def triangulate(topo, data=None):
             if data is None:
                 _, T3b = T6_to_T3(None, topo[i6].to_numpy())
             else:
-                _, T3b, data_b = T6_to_T3(None, topo[i6].to_numpy(),
-                                          data=data[i6].to_numpy())
+                _, T3b, data_b = T6_to_T3(
+                    None, topo[i6].to_numpy(), data=data[i6].to_numpy()
+                )
         except Exception:
             if data is None:
                 _, T3b = T6_to_T3(None, topo[i6])
@@ -297,17 +359,17 @@ def triangulate(topo, data=None):
 def dcomp2int(dcomp: str) -> int:
     assert isinstance(dcomp, str)
     dc = dcomp.lower()
-    if dc in ['ex', 'ux']:
+    if dc in ["ex", "ux"]:
         return 0
-    if dc in ['ey', 'uy']:
+    if dc in ["ey", "uy"]:
         return 1
-    if dc in ['ez', 'uz']:
+    if dc in ["ez", "uz"]:
         return 2
-    if dc in ['fx', 'rotx']:
+    if dc in ["fx", "rotx"]:
         return 3
-    if dc in ['fy', 'roty']:
+    if dc in ["fy", "roty"]:
         return 4
-    if dc in ['fz', 'rotz']:
+    if dc in ["fz", "rotz"]:
         return 5
     raise ValueError("Invalid displacement component '{}'".format(dcomp))
 
@@ -315,21 +377,21 @@ def dcomp2int(dcomp: str) -> int:
 def fcomp2int(fcomp: str) -> int:
     assert isinstance(fcomp, str)
     fc = fcomp.lower()
-    if fc == 'nx':
+    if fc == "nx":
         return 0
-    if fc in 'ny':
+    if fc in "ny":
         return 1
-    if fc in 'nxy':
+    if fc in "nxy":
         return 2
-    if fc == 'mx':
+    if fc == "mx":
         return 3
-    if fc in 'my':
+    if fc in "my":
         return 4
-    if fc in 'mxy':
+    if fc in "mxy":
         return 5
-    if fc in ['vx', 'vxz']:
+    if fc in ["vx", "vxz"]:
         return 6
-    if fc in ['vy', 'vyz']:
+    if fc in ["vy", "vyz"]:
         return 7
     raise ValueError("Invalid displacement component '{}'".format(fcomp))
 
@@ -337,42 +399,51 @@ def fcomp2int(fcomp: str) -> int:
 def scomp2int(scomp: str) -> int:
     assert isinstance(scomp, str)
     sc = scomp.lower()
-    if sc == 'sxx':
+    if sc == "sxx":
         return 0
-    if sc in 'syy':
+    if sc in "syy":
         return 1
-    if sc in 'sxy':
+    if sc in "sxy":
         return 2
-    if sc == 'sxz':
+    if sc == "sxz":
         return 3
-    if sc in 'syz':
+    if sc in "syz":
         return 4
-    if sc in 'svm':
+    if sc in "svm":
         return 5
-    if sc in 's1':
+    if sc in "s1":
         return 6
-    if sc in 's2':
+    if sc in "s2":
         return 7
-    if sc in 'as':
+    if sc in "as":
         return 8
     raise ValueError("Invalid stress component '{}'".format(scomp))
 
 
 mtype2str = {
-    0: 'Other',
-    1: 'Steel',
-    2: 'Concrete',
-    3: 'Timber',
-    4: 'Aluminium',
-    5: 'Brick'
+    0: "Other",
+    1: "Steel",
+    2: "Concrete",
+    3: "Timber",
+    4: "Aluminium",
+    5: "Brick",
 }
 
 
 xlmstrcomp2int = dict(
-    sxx_m_t=0, syy_m_t=1, sxy_m_t=2,
-    sxx_m_b=3, syy_m_b=4, sxy_m_b=5,
-    sxx_n=6, syy_n=7, sxy_n=8,
-    sxz_max=9, syz_max=10, srx_max=11, sry_max=12,
+    sxx_m_t=0,
+    syy_m_t=1,
+    sxy_m_t=2,
+    sxx_m_b=3,
+    syy_m_b=4,
+    sxy_m_b=5,
+    sxx_n=6,
+    syy_n=7,
+    sxy_n=8,
+    sxz_max=9,
+    syz_max=10,
+    srx_max=11,
+    sry_max=12,
 )
 
 

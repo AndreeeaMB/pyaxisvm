@@ -23,7 +23,7 @@ from .axcalculation import IAxisVMCalculation
 from .axloadcombinations import IAxisVMLoadCombinations
 
 
-__all__ = ['IAxisVMModels', 'IAxisVMModel']
+__all__ = ["IAxisVMModels", "IAxisVMModel"]
 
 
 class IAxisVMModel(AxWrapper):
@@ -33,8 +33,8 @@ class IAxisVMModel(AxWrapper):
         super().__init__(*args, **kwargs)
         self.parent = parent
         self._app = app
-    
-    @property 
+
+    @property
     def app(self):
         """Returns the application."""
         if self._app is not None:
@@ -97,14 +97,17 @@ class IAxisVMModel(AxWrapper):
     def LoadCombinations(self) -> IAxisVMLoadCombinations:
         """Returns a pointer object to the `IAxisVMLoadCombinations` COM interface."""
         return IAxisVMLoadCombinations(model=self, wrap=self._wrapped.LoadCombinations)
-    
+
     @property
     def MeshSurfaceIds(self) -> np.ndarray:
         """Returns the indices of the surfaces of all domains in the model
         as a :class:`numpy.ndarray`."""
         d = self.Domains
         dc = d.Count
-        def fnc(i): return d[i+1].MeshSurfaceIds
+
+        def fnc(i):
+            return d[i + 1].MeshSurfaceIds
+
         return np.vstack(list(map(fnc, range(dc)))).flatten().astype(np.int64)
 
     def points(self, ids=None) -> PointCloud:
@@ -122,10 +125,18 @@ class IAxisVMModel(AxWrapper):
             coords = self.Nodes.BulkGetCoord(ids)[0]
             coords = np.array([[n.x, n.y, n.z] for n in coords])
             if lc > 0 and mpc > 0:
-                def fnc(i): return lines.GetMidpoint(i+1)[0]
-                def xyz(n): return [n.x, n.y, n.z]
+
+                def fnc(i):
+                    return lines.GetMidpoint(i + 1)[0]
+
+                def xyz(n):
+                    return [n.x, n.y, n.z]
+
                 coords_mid = np.array(list(map(xyz, map(fnc, range(lc)))))
-                def fnc(i): return lines.MidpointId[i+1]
+
+                def fnc(i):
+                    return lines.MidpointId[i + 1]
+
                 mIDs = np.array(list(map(fnc, range(lc))))
                 i = np.where(mIDs > 0)[0]
                 mIDs = mIDs[i]
@@ -136,14 +147,14 @@ class IAxisVMModel(AxWrapper):
 
     def coordinates(self, ids=None) -> np.ndarray:
         """
-        Returns the coordinates of the points in the model as a :class:`numpy.ndarray`. 
-        
+        Returns the coordinates of the points in the model as a :class:`numpy.ndarray`.
+
         Parameters
         ----------
         ids: int or numpy.ndarray, Optional
             Indices of points, whose coordinates are to be returned. If there are no
             indices specified, coordinates for all points are returned. Default is None.
-            
+
         Returns
         -------
         :class:`sigmaepsilon.mesh.PointCloud`
@@ -167,12 +178,20 @@ class IAxisVMModel(AxWrapper):
             return np.vstack(res)
         return res[0] if len(res) == 1 else None
 
-    def dof_solution(self, *args, DisplacementSystem=1, LoadCaseId=None,
-                     LoadLevelOrModeShapeOrTimeStep=None, LoadCombinationId=None,
-                     case=None, combination=None, **kwargs) -> np.ndarray:
+    def dof_solution(
+        self,
+        *args,
+        DisplacementSystem=1,
+        LoadCaseId=None,
+        LoadLevelOrModeShapeOrTimeStep=None,
+        LoadCombinationId=None,
+        case=None,
+        combination=None,
+        **kwargs,
+    ) -> np.ndarray:
         """
         Returns degree of freedom solution for the whole model as a :class:`numpy.ndarray`.
-        
+
         Parameters
         ----------
         DisplacementSystem: int, Optional
@@ -187,7 +206,7 @@ class IAxisVMModel(AxWrapper):
             The name of a loadcase. Default is None.
         combination: str, Optional
             The name of a load combination. Default is None.
-        
+
         Returns
         -------
         numpy.ndarray
@@ -196,8 +215,7 @@ class IAxisVMModel(AxWrapper):
             LoadCombinationId = None
             if isinstance(case, str):
                 LoadCases = self.LoadCases
-                imap = {LoadCases.Name[i]: i for i in range(
-                    1, LoadCases.Count+1)}
+                imap = {LoadCases.Name[i]: i for i in range(1, LoadCases.Count + 1)}
                 if case in imap:
                     LoadCaseId = imap[case]
                 else:
@@ -208,13 +226,16 @@ class IAxisVMModel(AxWrapper):
             LoadCaseId = None
             if isinstance(combination, str):
                 LoadCombinations = self.LoadCombinations
-                imap = {LoadCombinations.Name[i]: i for i in range(
-                    1, LoadCombinations.Count+1)}
+                imap = {
+                    LoadCombinations.Name[i]: i
+                    for i in range(1, LoadCombinations.Count + 1)
+                }
                 if combination in imap:
                     LoadCombinationId = imap[combination]
                 else:
                     raise KeyError(
-                        "Unknown combination with name '{}'".format(combination))
+                        "Unknown combination with name '{}'".format(combination)
+                    )
             elif isinstance(combination, int):
                 LoadCombinationId = combination
         disps = self.Results.Displacements
@@ -243,10 +264,10 @@ class IAxisVMModel(AxWrapper):
         """Returns stresses for all surfaces in the model."""
         return self.Surfaces.surface_stresses(*args, **kwargs)
 
-    def critical_xlam_data(self, *args, CombinationType=None,  AnalysisType=0, **kwargs):
+    def critical_xlam_data(self, *args, CombinationType=None, AnalysisType=0, **kwargs):
         """
         Returns critical XLAM data.
-        
+
         Parameters
         ----------
         CombinationType: int, Optional
@@ -260,13 +281,13 @@ class IAxisVMModel(AxWrapper):
             MinMaxType=1,
             CombinationType=CombinationType,
             AnalysisType=AnalysisType,
-            Component=4  # xse_Max
+            Component=4,  # xse_Max
         )
 
         def get_efficiencies(i):
             return Domains[i].critical_xlam_surface_efficiencies(**dparams)
-        
-        vmax = 0 
+
+        vmax = 0
         did, sid, nid, f, lc = (None,) * 5
         for d in Domains.XLAMItems:
             data = get_efficiencies(d.Index)
@@ -276,10 +297,10 @@ class IAxisVMModel(AxWrapper):
             _vmax = eff_max[imax]
             if _vmax > vmax:
                 vmax = _vmax
-                did = d.Index 
+                did = d.Index
                 csum = np.cumsum(cuts)
                 iS = np.where(csum > imax)[0][0]
-                iN = imax - csum[iS-1]
+                iN = imax - csum[iS - 1]
                 sid = d.MeshSurfaceIds[iS]
                 nid = d.topology()[iS, iN]
 
@@ -296,10 +317,10 @@ class IAxisVMModel(AxWrapper):
                     MinMaxType=1,
                     CombinationType=CombinationType,
                     AnalysisType=AnalysisType,
-                    Component=4
+                    Component=4,
                 )
                 _, f, lc = Surfaces[sid].critical_xlam_efficiency(**sparams)
-                
+
         return f, lc, (did, sid, nid)
 
     def __enter__(self):
@@ -335,7 +356,7 @@ class IAxisVMModels(AxWrapper):
     def __init__(self, *args, app=None, **kwargs):
         super().__init__(*args, **kwargs)
         self._app = app
-    
+
     @property
     def app(self) -> Any:
         """Returns the application."""

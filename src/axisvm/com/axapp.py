@@ -23,7 +23,7 @@ class IAxisVMApplication(AxWrapper):
     @property
     def app(self) -> object:
         """
-        Returns a pointer object to the `IAxisVMApplication` COM interface of 
+        Returns a pointer object to the `IAxisVMApplication` COM interface of
         the embedding AxisVM instance.
         """
         return self._wrapped
@@ -41,7 +41,7 @@ class IAxisVMApplication(AxWrapper):
 
         Notes
         -----
-        As of now, AxisVM only supports one active model at once, but this may 
+        As of now, AxisVM only supports one active model at once, but this may
         change later. Nontheless, the interface is designed as if it was able to handle
         multiple active models.
         """
@@ -66,7 +66,7 @@ class IAxisVMApplication(AxWrapper):
 
     def new_model(self) -> IAxisVMModel:
         """
-        Creates new model and returns a pointer object to its `IAxisVMModel` 
+        Creates new model and returns a pointer object to its `IAxisVMModel`
         COM interface. Optinally, it saves the model, given that a valid file
         path is provided.
         """
@@ -74,9 +74,9 @@ class IAxisVMApplication(AxWrapper):
         return self._model
 
     def UnLoadCOMclients(self) -> int:
-        """        
-        Stops, unloads and releases memory taken by COM clients (addons, plugins 
-        and addon-plugins), then closes the application. 
+        """
+        Stops, unloads and releases memory taken by COM clients (addons, plugins
+        and addon-plugins), then closes the application.
 
         Returns
         -------
@@ -110,7 +110,7 @@ class IAxisVMApplication(AxWrapper):
     def CustomFunction(self, customId: int, jsonIN: str, jsonOUT: str):
         """
         This function was introduced to allow for new functions and features which will
-        be fully implemented in a future version of the COM server. 
+        be fully implemented in a future version of the COM server.
 
         Parameters
         ----------
@@ -126,7 +126,7 @@ class IAxisVMApplication(AxWrapper):
         -------
         jsonOUT: str
             Output parameters in JSON format.
-        int 
+        int
             Number of fields in JSON output if call is successful, otherwise an error code
             `errJSONpropertyMissing` or `errNotImplemented`.
         """
@@ -173,8 +173,8 @@ class IAxisVMApplication(AxWrapper):
         dlgtype: `EMessageDialogType`
             Dialog type.
         buttons: int
-            This value can be calculated by adding up the `EMessageDialogButton` values 
-            of the required buttons( e.g. for showing YES and NO buttons; values is: 
+            This value can be calculated by adding up the `EMessageDialogButton` values
+            of the required buttons( e.g. for showing YES and NO buttons; values is:
             mdbNo + mdbYes).
 
         Returns
@@ -185,13 +185,13 @@ class IAxisVMApplication(AxWrapper):
         return self._wrapped.MessageDlg(title, message, dlgtype, buttons)
 
     def Quit(self) -> None:
-        """        
-        Stops, unloads and releases memory taken by COM clients (addons, plugins 
-        and addon-plugins), releases the Python resources associated with the COM connection, 
-        then closes the application. 
+        """
+        Stops, unloads and releases memory taken by COM clients (addons, plugins
+        and addon-plugins), releases the Python resources associated with the COM connection,
+        then closes the application.
         """
         self._wrapped.Quit()
-        delattr(self, '_wrapped')
+        delattr(self, "_wrapped")
 
     @property
     def ApplicationClose(self) -> int:
@@ -225,7 +225,7 @@ class IAxisVMApplication(AxWrapper):
     def AskCloseOnLastReleased(self) -> int:
         """
         Determines whether the COM server shutdown displays a query to close the
-        AxisVM application as well. 
+        AxisVM application as well.
 
         Read and write property
 
@@ -239,7 +239,7 @@ class IAxisVMApplication(AxWrapper):
     def AskCloseOnLastReleased(self, value: bool = None):
         """
         Determines whether the COM server shutdown displays a query to close the
-        AxisVM application as well. 
+        AxisVM application as well.
 
         Parameters
         ----------
@@ -251,13 +251,13 @@ class IAxisVMApplication(AxWrapper):
     @property
     def AskSaveOnLastReleased(self) -> int:
         """
-        If True, on any attempt to shutdown the COM server a dialog window pops up, 
-        to warn us to save our model. 
+        If True, on any attempt to shutdown the COM server a dialog window pops up,
+        to warn us to save our model.
 
         Read and write property
 
         Notes
-        ----- 
+        -----
         The model should be saved after modification or if newer version of
         AxisVM is used.
         """
@@ -266,8 +266,8 @@ class IAxisVMApplication(AxWrapper):
     @AskSaveOnLastReleased.setter
     def AskSaveOnLastReleased(self, value: bool = None):
         """
-        If True, on any attempt to shutdown the COM server a dialog window pops up, 
-        to warn us to save our model. 
+        If True, on any attempt to shutdown the COM server a dialog window pops up,
+        to warn us to save our model.
         """
         assert isinstance(value, bool)
         self._wrapped.AskSaveOnLastReleased = value
@@ -294,18 +294,21 @@ class IAxisVMApplication(AxWrapper):
 
     @property
     def LTWH(self):
-        L, T, W, H = (self.MainFormWindowLeft, self.MainFormWindowTop,
-                      self.MainFormWindowWidth, self.MainFormWindowHeight)
+        L, T, W, H = (
+            self.MainFormWindowLeft,
+            self.MainFormWindowTop,
+            self.MainFormWindowWidth,
+            self.MainFormWindowHeight,
+        )
         return L, T, W, H
 
     def _get_attrs(self):
         """Return the representation methods (internal helper)."""
         attrs = []
-        platform = '32' if self.AxisVMPlatform == 0 else '64'
-        platform += ' bit'
+        platform = "32" if self.AxisVMPlatform == 0 else "64"
+        platform += " bit"
         attrs.append(("AxisVM Platform", platform, "{}"))
-        version = "{} {}".format(
-            self.LibraryMajorVersion, self.LibraryMinorVersion)
+        version = "{} {}".format(self.LibraryMajorVersion, self.LibraryMinorVersion)
         attrs.append(("AxisVM Version", self.Version, "{}"))
         attrs.append(("Type Library Version", version, "{}"))
         return attrs

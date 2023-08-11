@@ -17,33 +17,56 @@ from sigmaepsilon.plotting.plotly import plot_triangles_3d
 
 import axisvm
 from .core.wrap import AxisVMModelItem, AxisVMModelItems
-from .core.utils import (RMatrix3x3toNumPy, triangulate, RSurfaceForces2list,
-                         RSurfaceStresses2list, get_xsev, RXLAMSurfaceStresses2list,
-                         get_xlam_strs_case, get_xlam_strs_comb)
+from .core.utils import (
+    RMatrix3x3toNumPy,
+    triangulate,
+    RSurfaceForces2list,
+    RSurfaceStresses2list,
+    get_xsev,
+    RXLAMSurfaceStresses2list,
+    get_xlam_strs_case,
+    get_xlam_strs_comb,
+)
 from .attr import AxisVMAttributes
 
 surfacetype_to_str = {
-    0: 'Hole',
-    1: 'MembraneStress',
-    2: 'MembraneStrain',
-    3: 'Plate',
-    4: 'Shell',
+    0: "Hole",
+    1: "MembraneStress",
+    2: "MembraneStrain",
+    3: "Plate",
+    4: "Shell",
 }
 
-surface_attr_fields = ['Thickness', 'SurfaceType', 'RefZId', 'RefXId',
-                       'MaterialId', 'Characteristics', 'ElasticFoundation',
-                       'NonLinearity', 'Resistance']
+surface_attr_fields = [
+    "Thickness",
+    "SurfaceType",
+    "RefZId",
+    "RefXId",
+    "MaterialId",
+    "Characteristics",
+    "ElasticFoundation",
+    "NonLinearity",
+    "Resistance",
+]
 
-surface_data_fields = ['N', 'Attr', 'DomainIndex', 'LineIndex1',
-                       'LineIndex2', 'LineIndex3', 'LineIndex4']
+surface_data_fields = [
+    "N",
+    "Attr",
+    "DomainIndex",
+    "LineIndex1",
+    "LineIndex2",
+    "LineIndex3",
+    "LineIndex4",
+]
 
 
 def xyz(p):
     return [p.x, p.y, p.z]
 
 
-def get_surface_attributes(obj, *args, i=None, fields=None, raw=False,
-                           rec=None, attr=None, **kwargs):
+def get_surface_attributes(
+    obj, *args, i=None, fields=None, raw=False, rec=None, attr=None, **kwargs
+):
     if fields is None:
         fields = surface_attr_fields
     elif isinstance(fields, str):
@@ -61,32 +84,30 @@ def get_surface_attributes(obj, *args, i=None, fields=None, raw=False,
         attr = list(map(lambda r: r.Attr, rec))
 
     data = {}
-    if 'Thickness' in fields:
-        data['Thickness'] = list(map(lambda a: a.Thickness, attr))
-    if 'SurfaceType' in fields:
-        data['SurfaceType'] = list(
-            map(lambda a: surfacetype_to_str[a.SurfaceType], attr))
-    if 'RefXId' in fields:
-        data['RefXId'] = list(map(lambda a: a.RefXId, attr))
-    if 'RefZId' in fields:
-        data['RefZId'] = list(map(lambda a: a.RefZId, attr))
-    if 'MaterialId' in fields:
-        data['MaterialId'] = list(map(lambda a: a.MaterialId, attr))
-    if 'Characteristics' in fields:
-        data['Characteristics'] = list(map(lambda a: a.Charactersitics, attr))
-    if 'ElasticFoundation' in fields:
-        data['ElasticFoundation'] = list(
-            map(lambda a: xyz(a.ElasticFoundation), attr))
-    if 'NonLinearity' in fields:
-        data['NonLinearity'] = list(
-            map(lambda a: xyz(a.NonLinearity), attr))
-    if 'Resistance' in fields:
-        data['Resistance'] = list(map(lambda a: xyz(a.Resistance), attr))
+    if "Thickness" in fields:
+        data["Thickness"] = list(map(lambda a: a.Thickness, attr))
+    if "SurfaceType" in fields:
+        data["SurfaceType"] = list(
+            map(lambda a: surfacetype_to_str[a.SurfaceType], attr)
+        )
+    if "RefXId" in fields:
+        data["RefXId"] = list(map(lambda a: a.RefXId, attr))
+    if "RefZId" in fields:
+        data["RefZId"] = list(map(lambda a: a.RefZId, attr))
+    if "MaterialId" in fields:
+        data["MaterialId"] = list(map(lambda a: a.MaterialId, attr))
+    if "Characteristics" in fields:
+        data["Characteristics"] = list(map(lambda a: a.Charactersitics, attr))
+    if "ElasticFoundation" in fields:
+        data["ElasticFoundation"] = list(map(lambda a: xyz(a.ElasticFoundation), attr))
+    if "NonLinearity" in fields:
+        data["NonLinearity"] = list(map(lambda a: xyz(a.NonLinearity), attr))
+    if "Resistance" in fields:
+        data["Resistance"] = list(map(lambda a: xyz(a.Resistance), attr))
     return AxisVMAttributes(data)
 
 
 class SurfaceMixin:
-
     def surface_edges(self, topology=None):
         """Returns the edges of the surface."""
         topo = self.topology() if topology is None else topology
@@ -108,8 +129,15 @@ class SurfaceMixin:
         topo = self.topology() if topology is None else topology
         return triangulate(topo)
 
-    def plot(self, *args, scalars=None, plot_edges=True, detach=False,
-             backend='mpl', **kwargs):
+    def plot(
+        self,
+        *args,
+        scalars=None,
+        plot_edges=True,
+        detach=False,
+        backend="mpl",
+        **kwargs,
+    ):
         """Plots the mesh using `matplotlib`."""
         topo = self.topology()
         triangles = self.triangles(topo) - 1
@@ -117,15 +145,16 @@ class SurfaceMixin:
         if plot_edges:
             edges = self.surface_edges(topo) - 1
         if detach:
-            #ids = np.unique(triangles) + 1
+            # ids = np.unique(triangles) + 1
             coords = self.model.coordinates()
             coords, triangles = detach_mesh(coords, triangles)
         else:
             coords = self.model.coordinates()
-        if backend == 'mpl':
+        if backend == "mpl":
             pass
-        return plot_triangles_3d(coords, triangles, data=scalars,
-                                 plot_edges=plot_edges, edges=edges)
+        return plot_triangles_3d(
+            coords, triangles, data=scalars, plot_edges=plot_edges, edges=edges
+        )
 
 
 class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
@@ -162,14 +191,21 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
         """Returns the surface attributes of the surface as a dictionary."""
         return self.parent.get_surface_attributes(self.Index)
 
-    def xlam_stresses(self, case:Union[str, Iterable]=None, combination:str=None,
-                      LoadCaseId:int=None, LoadCombinationId:int=None,
-                      DisplacementSystem:int=0, LoadLevelOrModeShapeOrTimeStep:int=1,
-                      AnalysisType=0, frmt:str='array', factor:Iterable=None) \
-                          -> Union[dict, np.ndarray]:
+    def xlam_stresses(
+        self,
+        case: Union[str, Iterable] = None,
+        combination: str = None,
+        LoadCaseId: int = None,
+        LoadCombinationId: int = None,
+        DisplacementSystem: int = 0,
+        LoadLevelOrModeShapeOrTimeStep: int = 1,
+        AnalysisType=0,
+        frmt: str = "array",
+        factor: Iterable = None,
+    ) -> Union[dict, np.ndarray]:
         """
         Returns XLAM stresses either as a :class:`numpy.ndarray` or as a dictionary.
-        
+
         Parameters
         ----------
         DisplacementSystem: int, Optional
@@ -181,12 +217,12 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
         LoadCombinationId: int, Optional
             Default is None.
         case: Union[str, Iterable], Optional
-            The name of a loadcase or an iterable of indices. 
+            The name of a loadcase or an iterable of indices.
             Default is None.
         combination: str, Optional
             The name of a load combination. Default is None.
         AnalysisType: int, Optional
-            Default is 0. 
+            Default is 0.
         frmt: str, Optional
             Controls the type of the result. With 'array' it is a
             3d NumPy array, otherwise a dictionary. Default is 'array'.
@@ -194,146 +230,175 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
             Linear coefficients for the different load cases specified with 'case'.
             If 'case' is an Iterable, 'factor' must be an Iterable of the same shape.
             Default is None.
-            
+
         Notes
         -----
         1) It is the user who has to make sure that this call is only called on surfaces,
         that belong to an XLAM domain.
         2) The returned stresses do not belong to the same position.
-        
+
         Returns
         -------
         numpy.ndarray or dict
             If frmt is 'array', the result is a 2d float NumPy array of shape (nN, nX),
             where nN is the number of nodes of the surface and nX is the number of stress
             components, which are:
-            
+
                 0 : :math:`\\sigma_{x}` stress at the top, from bending
-                
+
                 1 : :math:`\\sigma_{y}` stress at the top, from bending
-                
+
                 2 : :math:`\\tau_{xy}` stress at the top, from bending
-                
+
                 3 : :math:`\\sigma_{x}` stress at the bottom, from bending
-                
+
                 4 : :math:`\\sigma_{y}` stress at the bottom, from bending
-                
+
                 5 : :math:`\\tau_{xy}` stress at the bottom, from bending
-                
+
                 6 : :math:`\\sigma_{x, max}` stress from stretching
-                
+
                 7 : :math:`\\sigma_{y, max}` stress from stretching
-                
+
                 8 : :math:`\\tau_{xy, max}` stress from stretching
-                
-                9 : :math:`\\tau_{xz, max}` shear stress 
-                
+
+                9 : :math:`\\tau_{xz, max}` shear stress
+
                 10 : :math:`\\tau_{yz, max}` shear stress
-                
-                11 : :math:`\\tau_{xz, r, max}` rolling shear stress 
-                
-                12 : :math:`\\tau_{yz, r, max}` rolling shear stress 
-            
+
+                11 : :math:`\\tau_{xz, r, max}` rolling shear stress
+
+                12 : :math:`\\tau_{yz, r, max}` rolling shear stress
+
             If frmt is 'dict', the stresses are returned as a dictionary of 1d NumPy arrays,
             where indices from 0 to 12 are the keys of the values at the corders.
         """
-        #assert self.IsXLAM, "This is not an XLAM domain!"
+        # assert self.IsXLAM, "This is not an XLAM domain!"
 
-        def ad2d(arr): return {i: arr[:, i] for i in range(13)}
+        def ad2d(arr):
+            return {i: arr[:, i] for i in range(13)}
 
         if issequence(case):
             if factor is not None:
-                assert issequence(factor), \
-                    "If 'case' is an Iterable, 'factor' must be an Iterable of the same shape."
-                assert len(case) == len(factor), \
-                    "Lists 'case' and 'factor' must have equal lengths."
-                res = sum([self.xlam_stresses(
-                    case=c,
-                    frmt='array',
-                    factor=f,
-                    AnalysisType=AnalysisType,
-                    LoadLevelOrModeShapeOrTimeStep=LoadLevelOrModeShapeOrTimeStep,
-                    DisplacementSystem=DisplacementSystem
-                ) for c, f in zip(case, factor)])
+                assert issequence(
+                    factor
+                ), "If 'case' is an Iterable, 'factor' must be an Iterable of the same shape."
+                assert len(case) == len(
+                    factor
+                ), "Lists 'case' and 'factor' must have equal lengths."
+                res = sum(
+                    [
+                        self.xlam_stresses(
+                            case=c,
+                            frmt="array",
+                            factor=f,
+                            AnalysisType=AnalysisType,
+                            LoadLevelOrModeShapeOrTimeStep=LoadLevelOrModeShapeOrTimeStep,
+                            DisplacementSystem=DisplacementSystem,
+                        )
+                        for c, f in zip(case, factor)
+                    ]
+                )
             else:
-                res = [self.xlam_stresses(
-                    case=c,
-                    frmt=frmt,
-                    factor=1.0,
-                    AnalysisType=AnalysisType,
-                    LoadLevelOrModeShapeOrTimeStep=LoadLevelOrModeShapeOrTimeStep,
-                    DisplacementSystem=DisplacementSystem
-                ) for c in case]
-            if frmt == 'dict':
+                res = [
+                    self.xlam_stresses(
+                        case=c,
+                        frmt=frmt,
+                        factor=1.0,
+                        AnalysisType=AnalysisType,
+                        LoadLevelOrModeShapeOrTimeStep=LoadLevelOrModeShapeOrTimeStep,
+                        DisplacementSystem=DisplacementSystem,
+                    )
+                    for c in case
+                ]
+            if frmt == "dict":
                 return ad2d(res)
             return res
 
         axm = self.model
         stresses = axm.Results.Stresses
-        
-        LoadCaseId, LoadCombinationId = \
-            stresses._get_case_or_component(case=case, combination=combination,
-                                            LoadCaseId=LoadCaseId,
-                                            LoadCombinationId=LoadCombinationId)
+
+        LoadCaseId, LoadCombinationId = stresses._get_case_or_component(
+            case=case,
+            combination=combination,
+            LoadCaseId=LoadCaseId,
+            LoadCombinationId=LoadCombinationId,
+        )
         config = dict(
             LoadCaseId=LoadCaseId,
             LoadCombinationId=LoadCombinationId,
             LoadLevelOrModeShapeOrTimeStep=LoadLevelOrModeShapeOrTimeStep,
-            DisplacementSystem=DisplacementSystem
+            DisplacementSystem=DisplacementSystem,
         )
         stresses.config(**config)
 
         if LoadCaseId is not None:
-            getter = partial(get_xlam_strs_case, stresses, LoadCaseId,
-                             LoadLevelOrModeShapeOrTimeStep, AnalysisType)
+            getter = partial(
+                get_xlam_strs_case,
+                stresses,
+                LoadCaseId,
+                LoadLevelOrModeShapeOrTimeStep,
+                AnalysisType,
+            )
         elif LoadCombinationId is not None:
-            getter = partial(get_xlam_strs_comb, stresses, LoadCombinationId,
-                             LoadLevelOrModeShapeOrTimeStep, AnalysisType)            
+            getter = partial(
+                get_xlam_strs_comb,
+                stresses,
+                LoadCombinationId,
+                LoadLevelOrModeShapeOrTimeStep,
+                AnalysisType,
+            )
         factor = 1.0 if factor is None else float(factor)
         res = factor * np.array(RXLAMSurfaceStresses2list(getter(self.Index)))
-    
-        if frmt == 'dict':
+
+        if frmt == "dict":
             return ad2d(res)
         return res
 
-    def critical_xlam_efficiency(self, *args, CombinationType:int=7,
-                                 AnalysisType:int=0, Component=4,
-                                 MinMaxType:int=1, **kwargs):
+    def critical_xlam_efficiency(
+        self,
+        *args,
+        CombinationType: int = 7,
+        AnalysisType: int = 0,
+        Component=4,
+        MinMaxType: int = 1,
+        **kwargs,
+    ):
         """
-        Returns the critical efficiency of a component, and also data on 
+        Returns the critical efficiency of a component, and also data on
         the combination that yields it.
-        
+
         Parameters
         ----------
         MinMaxType: EMinMaxType, Optional
             0 for min, 1 for max, 2 for minmax. Default is 1.
-        Component: EXLAMSurfaceEfficiency, Optional 
+        Component: EXLAMSurfaceEfficiency, Optional
             Default is 4, which refers to the maximum overall efficiency.
         CombinationType: ECombinationType, Optional
             Default is 7 wich refers to the worst case of ULS combinations.
         AnalysisType: EAnalysisType, Optional
             Default is 0 which refers to linear statics.
-            
+
         Notes
         -----
         It is the user who has to make sure that this call is only called on surfaces,
         that belong to an XLAM domain.
-        
+
         Returns
         -------
         numpy.ndarray
-            A 2d float NumPy array of shape (nN, nX), where nN is the number of nodes 
+            A 2d float NumPy array of shape (nN, nX), where nN is the number of nodes
             of the surface and nX is the number of efficiency components, which are:
-            
+
                 0 : M - N - 0
-                
+
                 1 : M - N - 90
-                
+
                 2 : V - T
-                
+
                 3 : Vr - N
-                
-                4 : max     
+
+                4 : max
         """
         axm = self.model
         stresses = axm.Results.Stresses
@@ -341,12 +406,13 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
             SurfaceId=self.Index,
             MinMaxType=MinMaxType,
             CombinationType=CombinationType,
-            AnalysisType=AnalysisType, 
+            AnalysisType=AnalysisType,
             Component=Component,
         )
         params.update(kwargs)
-        rec, _, factors, loadcases, _ = \
-            stresses.GetCriticalXLAMSurfaceEfficiency(**params)
+        rec, _, factors, loadcases, _ = stresses.GetCriticalXLAMSurfaceEfficiency(
+            **params
+        )
         data = np.array(get_xsev(rec))
         return data, factors, loadcases
 
@@ -374,7 +440,7 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
     @property
     def t(self) -> Array:
         """Returns the thicknessws of all surfaces."""
-        k = 'Thickness'
+        k = "Thickness"
         return np.array(self.get_surface_attributes(fields=[k])[k])
 
     @property
@@ -397,7 +463,7 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
         """Returns the surface attributes of all surfaces as a dictionary."""
         return self.get_surface_attributes()
 
-    def topology(self, *args,  i=None) -> TopologyArray:
+    def topology(self, *args, i=None) -> TopologyArray:
         i = i if len(args) == 0 else args[0]
         if isinstance(i, int):
             s = self[i]._wrapped
@@ -413,9 +479,16 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
                 ids = np.array(list(range(self.Count))) + 1
         if ids is not None:
             s = self._wrapped
-            def fnc_corner(i): return list(s[i].GetContourPoints()[0])
-            def fnc_mid(i): return list(s[i].GetMidPoints()[0])
-            def fnc(i): return fnc_corner(i) + fnc_mid(i)
+
+            def fnc_corner(i):
+                return list(s[i].GetContourPoints()[0])
+
+            def fnc_mid(i):
+                return list(s[i].GetMidPoints()[0])
+
+            def fnc(i):
+                return fnc_corner(i) + fnc_mid(i)
+
             return TopologyArray(ak.Array(list(map(fnc, ids))))
         return None
 
@@ -432,10 +505,8 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
             if isinstance(fields, str):
                 fields = [fields]
             if isinstance(fields, Iterable):
-                afields = list(
-                    filter(lambda i: i in surface_attr_fields, fields))
-                dfields = list(
-                    filter(lambda i: i in surface_data_fields, fields))
+                afields = list(filter(lambda i: i in surface_attr_fields, fields))
+                dfields = list(filter(lambda i: i in surface_data_fields, fields))
         fields = dfields + afields
         rec_raw = self._get_attributes_raw(i)
         if raw:
@@ -443,26 +514,25 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
         else:
             rec = rec_raw[0]
         data = {}
-        if 'Attr' in fields:
+        if "Attr" in fields:
             data.update(self.get_surface_attributes(_rec=rec_raw))
         else:
             if len(afields) > 0:
-                attr = self.get_surface_attributes(
-                    _rec=rec_raw, fields=afields)
+                attr = self.get_surface_attributes(_rec=rec_raw, fields=afields)
                 for f in afields:
                     data[f] = attr[f]
-        if 'N' in dfields:
-            data['N'] = list(map(lambda r: r.N, rec))
-        if 'DomainIndex' in dfields:
-            data['DomainIndex'] = list(map(lambda r: r.DomainIndex, rec))
-        if 'LineIndex1' in dfields:
-            data['LineIndex1'] = list(map(lambda r: r.LineIndex1, rec))
-        if 'LineIndex2' in dfields:
-            data['LineIndex2'] = list(map(lambda r: r.LineIndex2, rec))
-        if 'LineIndex3' in dfields:
-            data['LineIndex3'] = list(map(lambda r: r.LineIndex3, rec))
-        if 'LineIndex4' in dfields:
-            data['LineIndex4'] = list(map(lambda r: r.LineIndex4, rec))
+        if "N" in dfields:
+            data["N"] = list(map(lambda r: r.N, rec))
+        if "DomainIndex" in dfields:
+            data["DomainIndex"] = list(map(lambda r: r.DomainIndex, rec))
+        if "LineIndex1" in dfields:
+            data["LineIndex1"] = list(map(lambda r: r.LineIndex1, rec))
+        if "LineIndex2" in dfields:
+            data["LineIndex2"] = list(map(lambda r: r.LineIndex2, rec))
+        if "LineIndex3" in dfields:
+            data["LineIndex3"] = list(map(lambda r: r.LineIndex3, rec))
+        if "LineIndex4" in dfields:
+            data["LineIndex4"] = list(map(lambda r: r.LineIndex4, rec))
         return AxisVMAttributes(data)
 
     def _get_attributes_raw(self, *args, i=None) -> Iterable:
@@ -485,7 +555,10 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
         i = i if len(args) == 0 else args[0]
         if isinstance(i, int):
             s = self[i]._wrapped
-            def xyz(p): return [p.x, p.y, p.z]
+
+            def xyz(p):
+                return [p.x, p.y, p.z]
+
             return np.array(xyz(s.GetNormalVector()[0]), dtype=float)
         if isinstance(i, np.ndarray):
             inds = i
@@ -515,17 +588,23 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
         rec = list(map(lambda i: s.Item[i].GetTrMatrix()[0], inds))
         return np.array(list(map(RMatrix3x3toNumPy, rec)), dtype=float)
 
-    def generalized_surface_forces(self, *args, case=None, combination=None,
-                                   DisplacementSystem=None, LoadCaseId=None,
-                                   LoadLevelOrModeShapeOrTimeStep=None,
-                                   LoadCombinationId=None, **kwargs):
+    def generalized_surface_forces(
+        self,
+        *args,
+        case=None,
+        combination=None,
+        DisplacementSystem=None,
+        LoadCaseId=None,
+        LoadLevelOrModeShapeOrTimeStep=None,
+        LoadCombinationId=None,
+        **kwargs,
+    ):
         axm = self.model
         if case is not None:
             LoadCombinationId = None
             if isinstance(case, str):
                 LoadCases = axm.LoadCases
-                imap = {LoadCases.Name[i]: i for i in range(
-                    1, LoadCases.Count+1)}
+                imap = {LoadCases.Name[i]: i for i in range(1, LoadCases.Count + 1)}
                 if case in imap:
                     LoadCaseId = imap[case]
                 else:
@@ -536,13 +615,16 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
             LoadCaseId = None
             if isinstance(combination, str):
                 LoadCombinations = axm.LoadCombinations
-                imap = {LoadCombinations.Name[i]: i for i in range(
-                    1, LoadCombinations.Count+1)}
+                imap = {
+                    LoadCombinations.Name[i]: i
+                    for i in range(1, LoadCombinations.Count + 1)
+                }
                 if combination in imap:
                     LoadCombinationId = imap[combination]
                 else:
                     raise KeyError(
-                        "Unknown combination with name '{}'".format(combination))
+                        "Unknown combination with name '{}'".format(combination)
+                    )
             elif isinstance(combination, int):
                 LoadCombinationId = combination
         forces = axm.Results.Forces
@@ -563,17 +645,24 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
             recs = forces.AllSurfaceForcesByLoadCombinationId()[0]
         return ak.Array(list(map(RSurfaceForces2list, recs)))
 
-    def surface_stresses(self, *args, case=None, combination=None,
-                         DisplacementSystem=None, LoadCaseId=None,
-                         LoadLevelOrModeShapeOrTimeStep=None,
-                         LoadCombinationId=None, z='m', **kwargs):
+    def surface_stresses(
+        self,
+        *args,
+        case=None,
+        combination=None,
+        DisplacementSystem=None,
+        LoadCaseId=None,
+        LoadLevelOrModeShapeOrTimeStep=None,
+        LoadCombinationId=None,
+        z="m",
+        **kwargs,
+    ):
         axm = self.model
         if case is not None:
             LoadCombinationId = None
             if isinstance(case, str):
                 LoadCases = axm.LoadCases
-                imap = {LoadCases.Name[i]: i for i in range(
-                    1, LoadCases.Count+1)}
+                imap = {LoadCases.Name[i]: i for i in range(1, LoadCases.Count + 1)}
                 if case in imap:
                     LoadCaseId = imap[case]
                 else:
@@ -584,13 +673,16 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
             LoadCaseId = None
             if isinstance(combination, str):
                 LoadCombinations = axm.LoadCombinations
-                imap = {LoadCombinations.Name[i]: i for i in range(
-                    1, LoadCombinations.Count+1)}
+                imap = {
+                    LoadCombinations.Name[i]: i
+                    for i in range(1, LoadCombinations.Count + 1)
+                }
                 if combination in imap:
                     LoadCombinationId = imap[combination]
                 else:
                     raise KeyError(
-                        "Unknown combination with name '{}'".format(combination))
+                        "Unknown combination with name '{}'".format(combination)
+                    )
             elif isinstance(combination, int):
                 LoadCombinationId = combination
             else:

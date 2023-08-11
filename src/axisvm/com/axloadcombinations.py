@@ -3,8 +3,7 @@ from typing import List
 
 from .core.wrap import AxWrapper
 
-__all__ = ['IAxisVMLoadCombinations']
-
+__all__ = ["IAxisVMLoadCombinations"]
 
 
 combinationtype2name = {
@@ -39,16 +38,16 @@ combinationtype2name = {
     28: "SLS Semi Auto SLS1",
     29: "SLS Semi Auto SLS2",
     30: "SLS Semi Auto SLS3",
-    31: "Automatic"
+    31: "Automatic",
 }
 
 
-combinationname2type = {v : k for k, v in combinationtype2name.items()}
+combinationname2type = {v: k for k, v in combinationtype2name.items()}
 
 
 class IAxisVMLoadCombinations(AxWrapper):
     """Wrapper for the `IAxisVMModel` COM interface."""
-    
+
     def valid_load_combination_types(self) -> List[int]:
         """
         Returns valid load combination types.
@@ -58,15 +57,15 @@ class IAxisVMLoadCombinations(AxWrapper):
             raise Exception(f"Error code: {retval}")
         else:
             return result
-        
+
     def valid_load_combination_names(self) -> List[str]:
         """
         Returns the names of valid load combination types.
         """
         ids = self.valid_load_combination_types()
         return [combinationtype2name[i] for i in ids]
-    
-    def combination_name_to_type(self, name:str) -> int:
+
+    def combination_name_to_type(self, name: str) -> int:
         """
         Returns the type (int) of the combination from its name
         according to :func:`valid_combination_names`.

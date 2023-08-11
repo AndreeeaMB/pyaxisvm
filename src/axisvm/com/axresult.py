@@ -17,15 +17,21 @@ class AxisVMResultItem(AxWrapper):
     def model(self):
         return self.parent.model
 
-    def _get_case_or_component(self, *args, case=None, combination=None,
-                               LoadCaseId=None, LoadCombinationId=None, **kwargs):
+    def _get_case_or_component(
+        self,
+        *args,
+        case=None,
+        combination=None,
+        LoadCaseId=None,
+        LoadCombinationId=None,
+        **kwargs,
+    ):
         axm = self.model
         if case is not None:
             LoadCombinationId = None
             if isinstance(case, str):
                 LoadCases = axm.LoadCases
-                imap = {LoadCases.Name[i]: i for i in range(
-                    1, LoadCases.Count+1)}
+                imap = {LoadCases.Name[i]: i for i in range(1, LoadCases.Count + 1)}
                 if case in imap:
                     LoadCaseId = imap[case]
                 else:
@@ -36,19 +42,27 @@ class AxisVMResultItem(AxWrapper):
             LoadCaseId = None
             if isinstance(combination, str):
                 LoadCombinations = axm.LoadCombinations
-                imap = {LoadCombinations.Name[i]: i for i in range(
-                    1, LoadCombinations.Count+1)}
+                imap = {
+                    LoadCombinations.Name[i]: i
+                    for i in range(1, LoadCombinations.Count + 1)
+                }
                 if combination in imap:
                     LoadCombinationId = imap[combination]
                 else:
                     raise KeyError(
-                        "Unknown combination with name '{}'".format(combination))
+                        "Unknown combination with name '{}'".format(combination)
+                    )
             elif isinstance(combination, int):
                 LoadCombinationId = combination
         return LoadCaseId, LoadCombinationId
 
-    def config(self, *args, DisplacementSystem=None,
-               LoadLevelOrModeShapeOrTimeStep=None, **kwargs):
+    def config(
+        self,
+        *args,
+        DisplacementSystem=None,
+        LoadLevelOrModeShapeOrTimeStep=None,
+        **kwargs,
+    ):
         LoadCaseId, LoadCombinationId = self._get_case_or_component(*args, **kwargs)
         resobj = self._wrapped
         if isinstance(DisplacementSystem, int):
@@ -63,22 +77,25 @@ class AxisVMResultItem(AxWrapper):
 
 class IAxisVMDisplacements(AxisVMResultItem):
     """Wrapper for the `IAxisVMDisplacements` COM interface."""
+
     ...
 
 
 class IAxisVMForces(AxisVMResultItem):
     """Wrapper for the `IAxisVMForces` COM interface."""
+
     ...
 
 
 class IAxisVMStresses(AxisVMResultItem):
     """Wrapper for the `IAxisVMStresses` COM interface."""
+
     ...
 
 
 class IAxisVMResults(AxWrapper):
     """Wrapper for the `IAxisVMResults` COM interface."""
-    
+
     def __init__(self, *args, model=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.model = model
