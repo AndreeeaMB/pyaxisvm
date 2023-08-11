@@ -16,26 +16,25 @@ class IAxisVMApplication(AxWrapper):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         try:
-            self._model = IAxisVMModel(wrap=self._wrapped.Models.Item[1])
+            self._model = IAxisVMModel(wrap=self._wrapped.Models.Item[1], app=self)
         except Exception:
             self.new_model(**kwargs)
 
     @property
-    def app(self):
+    def app(self) -> object:
         """
         Returns a pointer object to the `IAxisVMApplication` COM interface of 
         the embedding AxisVM instance.
-
         """
         return self._wrapped
 
     @property
-    def Models(self):
+    def Models(self) -> IAxisVMModels:
         """Returns a pointer object to the `IAxisVMModels` COM interface."""
         return IAxisVMModels(app=self, wrap=self._wrapped.Models)
 
     @property
-    def model(self):
+    def model(self) -> IAxisVMModel:
         """
         Returns a pointer object to the `IAxisVMModel` COM interface of the
         active model in AxisVM.
@@ -45,7 +44,6 @@ class IAxisVMApplication(AxWrapper):
         As of now, AxisVM only supports one active model at once, but this may 
         change later. Nontheless, the interface is designed as if it was able to handle
         multiple active models.
-
         """
         return self._model
 
@@ -53,10 +51,9 @@ class IAxisVMApplication(AxWrapper):
     def model(self, value: Union[int, str]):
         """
         Sets the active model.
-        
         """
         if isinstance(value, int):
-            self._model = IAxisVMModel(wrap=self._wrapped.Models.Item[value])
+            self._model = IAxisVMModel(wrap=self._wrapped.Models.Item[value], app=self)
         elif isinstance(value, str):
             if os.path.exists(value):
                 if self._model is None:
@@ -72,7 +69,6 @@ class IAxisVMApplication(AxWrapper):
         Creates new model and returns a pointer object to its `IAxisVMModel` 
         COM interface. Optinally, it saves the model, given that a valid file
         path is provided.
-
         """
         self.model = self._wrapped.Models.New()
         return self._model
@@ -86,7 +82,6 @@ class IAxisVMApplication(AxWrapper):
         -------
         int
             Returns 1 if succesful.
-
         """
         return self._wrapped.UnLoadCOMclients()
 
@@ -98,7 +93,6 @@ class IAxisVMApplication(AxWrapper):
         -------
         int
             1 if succesful, 0 otherwise.
-
         """
         return self._wrapped.BringToFront()
 
@@ -110,7 +104,6 @@ class IAxisVMApplication(AxWrapper):
         -------
         int
             1 if succesful, 0 otherwise.
-
         """
         pass
 
@@ -121,24 +114,21 @@ class IAxisVMApplication(AxWrapper):
 
         Parameters
         ----------
-        customId : str
+        customId: str
             Custom function index.
-
-        jsonIN : str
+        jsonIN: str
             Input parameters in JSON format.
 
-        jsonOUT : str
+        jsonOUT: str
             Output parameters in JSON format.
 
         Returns
         -------
-        jsonOUT : str
+        jsonOUT: str
             Output parameters in JSON format.
-
         int 
             Number of fields in JSON output if call is successful, otherwise an error code
             `errJSONpropertyMissing` or `errNotImplemented`.
-
         """
         r = self._wrapped.CustomFunction(customId, jsonIN, jsonOUT)
         return jsonOUT, r
@@ -167,7 +157,6 @@ class IAxisVMApplication(AxWrapper):
         will still receive events indirectly through HandleMessages, making it possible
         to process those events and ultimately to set the flag that will unblock the
         thread which was blocked through the loop.
-
         """
         return self._wrapped.HandleMessages()
 
@@ -177,16 +166,13 @@ class IAxisVMApplication(AxWrapper):
 
         Parameters
         ----------
-        title : str
+        title: str
             Title of the dialog window.
-
-        message : str
+        message: str
             Message text of the dialog window.
-
-        dlgtype : `EMessageDialogType`
+        dlgtype: `EMessageDialogType`
             Dialog type.
-
-        buttons : int
+        buttons: int
             This value can be calculated by adding up the `EMessageDialogButton` values 
             of the required buttons( e.g. for showing YES and NO buttons; values is: 
             mdbNo + mdbYes).
@@ -195,19 +181,14 @@ class IAxisVMApplication(AxWrapper):
         -------
         int
             The value of the button the user clicked
-
         """
         return self._wrapped.MessageDlg(title, message, dlgtype, buttons)
 
-    def Quit(self):
+    def Quit(self) -> None:
         """        
         Stops, unloads and releases memory taken by COM clients (addons, plugins 
-        and addon-plugins), then closes the application. 
-
-        Note
-        ----
-        It also releases the Python resources associated with the COM connection.
-
+        and addon-plugins), releases the Python resources associated with the COM connection, 
+        then closes the application. 
         """
         self._wrapped.Quit()
         delattr(self, '_wrapped')
@@ -223,7 +204,6 @@ class IAxisVMApplication(AxWrapper):
         Returns
         -------
         int
-
         """
         return self._wrapped.ApplicationClose
 
@@ -235,9 +215,8 @@ class IAxisVMApplication(AxWrapper):
 
         Parameters
         ----------
-        value : `EApplicationClose`
+        value: `EApplicationClose`
             See the docs of `EApplicationClose` for the details.
-
         """
         assert value is not None
         self._wrapped.ApplicationClose = value
@@ -264,8 +243,7 @@ class IAxisVMApplication(AxWrapper):
 
         Parameters
         ----------
-        value : bool
-
+        value: bool
         """
         assert isinstance(value, bool)
         self._wrapped.AskCloseOnLastReleased = value
@@ -282,7 +260,6 @@ class IAxisVMApplication(AxWrapper):
         ----- 
         The model should be saved after modification or if newer version of
         AxisVM is used.
-
         """
         return self._wrapped.AskSaveOnLastReleased
 
@@ -291,7 +268,6 @@ class IAxisVMApplication(AxWrapper):
         """
         If True, on any attempt to shutdown the COM server a dialog window pops up, 
         to warn us to save our model. 
-
         """
         assert isinstance(value, bool)
         self._wrapped.AskSaveOnLastReleased = value
@@ -304,10 +280,8 @@ class IAxisVMApplication(AxWrapper):
         Returns
         -------
         int
-            32 bit AxisVM -> 0
-
-            64 bit AxisVM -> 1
-
+            * 32 bit AxisVM -> 0
+            * 64 bit AxisVM -> 1
         """
         return self._wrapped.AxisVMPlatform
 
