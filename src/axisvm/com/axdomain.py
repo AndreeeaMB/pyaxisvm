@@ -90,15 +90,14 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
 
         Parameters
         ----------
-        compose : bool, Optional
+        compose: bool, Optional
             If True, the result is one matrix, otherwise 4 submatrices.
             Default is True.
 
         Returns
         -------
-        Union[np.ndarray, List[np.ndarray]]
+        Union[numpy.ndarray, List[np.ndarray]]
             One or four NumPy arrays.
-
         """
         A, B, D, S, *_ = self._wrapped.GetCustomStiffnessMatrix()
         A, B, D = [RMatrix3x3toNumPy(x) for x in (A, B, D)]
@@ -191,7 +190,6 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         ----------
         **mpl_kw : dict, Optional
             Parameters to pass to :func:`sigmaepsilon.plotting.mpl.triplot`
-
         """
         coords, topo, _ = self.detach_mesh(
             return_indices=True, triangulate=True)
@@ -263,7 +261,6 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         Finally, close the application.
 
         >>> axvm.Quit()
-
         """
         axm = self.model
         dofsol = axm.dof_solution(*args, DisplacementSystem=1, **kwargs)
@@ -352,7 +349,7 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
 
         Parameters
         ----------
-        component : str, Optional
+        component: str, Optional
             Possible options are:
 
                 'sxx' : :math:`\\sigma_{x}` stress
@@ -374,26 +371,22 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
                 'as' : :math:`\\alpha` principal direction angle
 
             Default is 'sxx_m_t' for XLAM domains 'sxx' otherwise.
-
-        source : str, Optional
+        source: str, Optional
             Specifies the source of the possibe agents. Possible values are 
             'm' for bending and 'n' for normal action. Only for XLAM domains. 
             Default is None.
-
-        z : str, Optional
+        z: str, Optional
             Specifies the location along the thickness. Possible values are 
             't' for top, 'b' for bottom, 'm' for middle and 'max' for the location
             where the value takes its maximum (only for shear stresses). 
             Default is None.
-
-        **mpl_kw : dict, Optional
+        **mpl_kw: dict, Optional
             Parameters to pass to :func:`sigmaepsilon.plotting.mpl.triplot`
             
         Import the necessary stuff,
 
         Examples
         --------
-        
         >>> from axisvm.com.client import start_AxisVM
         >>> from axisvm import examples
         >>> import matplotlib.pyplot as plt
@@ -418,7 +411,6 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         Finally, close the application.
 
         >>> axvm.Quit()
-            
         """
         smoothen: bool = False
         assert not smoothen, "Smoothing is not available at the moment."
@@ -489,33 +481,25 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         
         Parameters
         ----------
-        DisplacementSystem : int, Optional
+        DisplacementSystem: int, Optional
             0 for local, 1 for global. Default is 1.
-        
-        LoadCaseId : int, Optional
+        LoadCaseId: int, Optional
             Default is None.
-            
-        LoadLevelOrModeShapeOrTimeStep : int, Optional
+        LoadLevelOrModeShapeOrTimeStep: int, Optional
             Default is None.
-            
-        LoadCombinationId : int, Optional
+        LoadCombinationId: int, Optional
             Default is None.
-            
-        case : Union[str, Iterable], Optional
+        case: Union[str, Iterable], Optional
             The name of a loadcase or an iterable of indices. 
             Default is None.
-        
-        combination : str, Optional
+        combination: str, Optional
             The name of a load combination. Default is None.
-            
-        AnalysisType : int, Optional
+        AnalysisType: int, Optional
             Default is 0.
-            
-        frmt : str, Optional
+        frmt: str, Optional
             Controls the type of the result. With 'array' it is a
             3d NumPy array, otherwise a dictionary. Default is 'array'.
-        
-        factor : Iterable, Optional
+        factor: Iterable, Optional
             Linear coefficients for the different load cases specified with 'case'.
             If 'case' is an Iterable, 'factor' must be an Iterable of the same shape.
             Default is None.
@@ -528,7 +512,7 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         
         Returns
         -------
-        :class:`numpy.ndarray` or dict
+        numpy.ndarray or dict
             If frmt is 'array', the result is a 2d float NumPy array of shape (nN, nX),
             where nN is the number of nodes of the surface and nX is the number of stress
             components, which are:
@@ -561,7 +545,6 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
             
             If frmt is 'dict', the stresses are returned as a dictionary of 1d NumPy arrays,
             where indices from 0 to 12 are the keys of the values at the corders.
-        
         """
         assert self.IsXLAM, "This is not an XLAM domain!"
 
