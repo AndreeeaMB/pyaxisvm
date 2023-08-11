@@ -9,13 +9,13 @@ class AxisVMAttributes(dict):
     
     """
     
-    def to_pandas(self, nested=False) -> pd.DataFrame:
+    def to_pandas(self, nested:bool=False) -> pd.DataFrame:
         """
         Returns the attributes as a Pandas DataFrame.
         """
         return pd.DataFrame.from_dict(self)
 
-    def to_awkward(self, nested=False) -> ak.Record:
+    def to_awkward(self, nested:bool=False) -> ak.Record:
         """
         Returns the attributes as an awkward Record.
         """
