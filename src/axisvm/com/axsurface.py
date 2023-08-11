@@ -172,33 +172,25 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
         
         Parameters
         ----------
-        DisplacementSystem : int, Optional
+        DisplacementSystem: int, Optional
             0 for local, 1 for global. Default is 1.
-        
-        LoadCaseId : int, Optional
+        LoadCaseId: int, Optional
             Default is None.
-            
-        LoadLevelOrModeShapeOrTimeStep : int, Optional
+        LoadLevelOrModeShapeOrTimeStep: int, Optional
             Default is None.
-            
-        LoadCombinationId : int, Optional
+        LoadCombinationId: int, Optional
             Default is None.
-            
-        case : Union[str, Iterable], Optional
+        case: Union[str, Iterable], Optional
             The name of a loadcase or an iterable of indices. 
             Default is None.
-        
-        combination : str, Optional
+        combination: str, Optional
             The name of a load combination. Default is None.
-            
-        AnalysisType : int, Optional
-            Default is 0.
-            
-        frmt : str, Optional
+        AnalysisType: int, Optional
+            Default is 0. 
+        frmt: str, Optional
             Controls the type of the result. With 'array' it is a
             3d NumPy array, otherwise a dictionary. Default is 'array'.
-        
-        factor : Iterable, Optional
+        factor: Iterable, Optional
             Linear coefficients for the different load cases specified with 'case'.
             If 'case' is an Iterable, 'factor' must be an Iterable of the same shape.
             Default is None.
@@ -211,7 +203,7 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
         
         Returns
         -------
-        :class:`numpy.ndarray` or dict
+        numpy.ndarray or dict
             If frmt is 'array', the result is a 2d float NumPy array of shape (nN, nX),
             where nN is the number of nodes of the surface and nX is the number of stress
             components, which are:
@@ -244,7 +236,6 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
             
             If frmt is 'dict', the stresses are returned as a dictionary of 1d NumPy arrays,
             where indices from 0 to 12 are the keys of the values at the corders.
-        
         """
         #assert self.IsXLAM, "This is not an XLAM domain!"
 
@@ -314,16 +305,13 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
         
         Parameters
         ----------
-        MinMaxType : EMinMaxType, Optional
+        MinMaxType: EMinMaxType, Optional
             0 for min, 1 for max, 2 for minmax. Default is 1.
-            
-        Component : EXLAMSurfaceEfficiency, Optional 
+        Component: EXLAMSurfaceEfficiency, Optional 
             Default is 4, which refers to the maximum overall efficiency.
-        
-        CombinationType : ECombinationType, Optional
+        CombinationType: ECombinationType, Optional
             Default is 7 wich refers to the worst case of ULS combinations.
-            
-        AnalysisType : EAnalysisType, Optional
+        AnalysisType: EAnalysisType, Optional
             Default is 0 which refers to linear statics.
             
         Notes
@@ -333,7 +321,7 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
         
         Returns
         -------
-        :class:`numpy.ndarray`
+        numpy.ndarray
             A 2d float NumPy array of shape (nN, nX), where nN is the number of nodes 
             of the surface and nX is the number of efficiency components, which are:
             
@@ -605,6 +593,8 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
                         "Unknown combination with name '{}'".format(combination))
             elif isinstance(combination, int):
                 LoadCombinationId = combination
+            else:
+                raise TypeError("LoadCombinationId must be a string or an integer.")
         resobj = axm.Results.Stresses
         if DisplacementSystem is None:
             DisplacementSystem = 1  # global

@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from typing import Any
+
 import numpy as np
 import awkward as ak
 
@@ -6,7 +8,7 @@ from sigmaepsilon.mesh import PointCloud, CartesianFrame
 from sigmaepsilon.mesh import TopologyArray
 from sigmaepsilon.math.linalg.sparse.utils import count_cols
 
-from .core.wrap import AxWrapper, AxisVMModelItems
+from .core.wrap import AxWrapper
 from .core.utils import RDisplacementValues2list
 
 from .axnode import IAxisVMNodes
@@ -18,6 +20,7 @@ from .axwindow import IAxisVMWindows
 from .axresult import IAxisVMResults
 from .axmaterial import IAxisVMMaterials
 from .axcalculation import IAxisVMCalculation
+from .axloadcombinations import IAxisVMLoadCombinations
 
 
 __all__ = ['IAxisVMModels', 'IAxisVMModel']
@@ -26,9 +29,20 @@ __all__ = ['IAxisVMModels', 'IAxisVMModel']
 class IAxisVMModel(AxWrapper):
     """Wrapper for the `IAxisVMModel` COM interface."""
 
-    def __init__(self, *args, parent=None, **kwargs):
+    def __init__(self, *args, app=None, parent=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.parent = parent
+        self._app = app
+    
+    @property 
+    def app(self):
+        """Returns the application."""
+        if self._app is not None:
+            return self._app
+        elif self.parent is not None:
+            if self.parent._app is not None:
+                return self.parent._app
+        return None
 
     @property
     def Nodes(self) -> IAxisVMNodes:
@@ -80,6 +94,11 @@ class IAxisVMModel(AxWrapper):
         return IAxisVMMaterials(model=self, wrap=self._wrapped.Materials)
 
     @property
+    def LoadCombinations(self) -> IAxisVMLoadCombinations:
+        """Returns a pointer object to the `IAxisVMLoadCombinations` COM interface."""
+        return IAxisVMLoadCombinations(model=self, wrap=self._wrapped.LoadCombinations)
+    
+    @property
     def MeshSurfaceIds(self) -> np.ndarray:
         """Returns the indices of the surfaces of all domains in the model
         as a :class:`numpy.ndarray`."""
@@ -121,13 +140,13 @@ class IAxisVMModel(AxWrapper):
         
         Parameters
         ----------
-        ids : int or :class:`numpy.ndarray`, Optional
+        ids: int or numpy.ndarray, Optional
             Indices of points, whose coordinates are to be returned. If there are no
             indices specified, coordinates for all points are returned. Default is None.
             
         Returns
         -------
-        :class:`polymesh.PointCloud`
+        :class:`sigmaepsilon.mesh.PointCloud`
         """
         return self.points(ids).show()
 
@@ -156,28 +175,22 @@ class IAxisVMModel(AxWrapper):
         
         Parameters
         ----------
-        DisplacementSystem : int, Optional
+        DisplacementSystem: int, Optional
             0 for local, 1 for global. Default is 1.
-        
-        LoadCaseId : int, Optional
+        LoadCaseId: int, Optional
             Default is None.
-            
-        LoadLevelOrModeShapeOrTimeStep : int, Optional
+        LoadLevelOrModeShapeOrTimeStep: int, Optional
             Default is None.
-            
-        LoadCombinationId : int, Optional
+        LoadCombinationId: int, Optional
             Default is None.
-            
-        case : str, Optional
+        case: str, Optional
             The name of a loadcase. Default is None.
-        
-        combination : str, Optional
+        combination: str, Optional
             The name of a load combination. Default is None.
         
         Returns
         -------
-        :class:`numpy.ndarray`
-        
+        numpy.ndarray
         """
         if case is not None:
             LoadCombinationId = None
@@ -236,12 +249,10 @@ class IAxisVMModel(AxWrapper):
         
         Parameters
         ----------
-        CombinationType : int, Optional
+        CombinationType: int, Optional
             Default is None.
-        
-        AnalysisType : int, Optional
+        AnalysisType: int, Optional
             Default is 0.
-                
         """
         Domains = self.Domains
         Surfaces = self.Surfaces
@@ -323,4 +334,9 @@ class IAxisVMModels(AxWrapper):
 
     def __init__(self, *args, app=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.app = app
+        self._app = app
+    
+    @property
+    def app(self) -> Any:
+        """Returns the application."""
+        return self._app

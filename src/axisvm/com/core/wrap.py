@@ -131,17 +131,15 @@ class AxWrapper(Wrapper):
 
         Parameters
         ----------
-        display : bool, optional
+        display: bool, optional
             Display this header in iPython.
-
-        html : bool, optional
+        html: bool, optional
             Generate the output as HTML.
 
         Returns
         -------
         str
             Header statistics.
-
         """
         # Generate the output
         attrs = self._get_attrs()

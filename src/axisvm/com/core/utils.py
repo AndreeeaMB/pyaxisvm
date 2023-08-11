@@ -144,6 +144,20 @@ def ssvQ8(rec, mode=None) -> list:
 def RSurfaceStresses2list(rec, mode=None) -> list:
     return ssvT6(rec, mode=mode) if rec.ContourPointCount == 3 else ssvQ8(rec, mode=mode)
 
+
+# %%
+
+def _get_lfv(lfv) -> list:
+    return [
+        lfv.lfvNx, lfv.lfvVy, lfv.lfvVz, 
+        lfv.lfvTx, lfv.lfvMy, lfv.lfvMz,
+        lfv.lfvMyD]
+
+
+def RLineForceValues2list(rec) -> list:
+    return _get_lfv(rec)
+
+
 # %%
 
 def get_xssv(rec) -> list:
