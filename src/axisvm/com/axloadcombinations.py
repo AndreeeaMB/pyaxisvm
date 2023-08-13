@@ -71,3 +71,10 @@ class IAxisVMLoadCombinations(AxWrapper):
         according to :func:`valid_combination_names`.
         """
         return combinationname2type[name]
+    
+    def combination_type_to_name(self, combination_type: int) -> str:
+        """
+        Returns the name of the combination from its type (ECombinationType)
+        according to :func:`valid_combination_names`.
+        """
+        return combinationtype2name[combination_type]
