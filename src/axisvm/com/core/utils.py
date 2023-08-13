@@ -76,12 +76,16 @@ def sfcQ8(r) -> list:
     )
 
 
-def RSurfaceCoordinates2list(r):
+def RSurfaceCoordinates2list(r) -> list:
     return sfcT6(r) if r.ContourPointCount == 3 else sfcQ8(r)
 
 
-def RDisplacementValues2list(r):
+def RDisplacementValues2list(r) -> list:
     return [r.ex, r.ey, r.ez, r.Fx, r.Fy, r.Fz]
+
+
+def RLineForceValues2list(r) -> list:
+    return [r.Nx, r.Vy, r.Vz, r.Tx, r.My, r.My, r.MyD]
 
 
 # %%
