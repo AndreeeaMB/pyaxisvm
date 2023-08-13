@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-import numpy as np
-import awkward as ak
-from numpy import ndarray as Array
-from typing import Iterable, Union
+from typing import Iterable, Union, Any, Tuple
 from functools import partial
 
+import numpy as np
 import awkward as ak
+from numpy import ndarray
 
 from sigmaepsilon.core import issequence
 from sigmaepsilon.mesh import TopologyArray
@@ -26,8 +25,11 @@ from .core.utils import (
     RXLAMSurfaceStresses2list,
     get_xlam_strs_case,
     get_xlam_strs_comb,
+    _LoadLevelOrModeShapeOrTimeStep,
+    _DisplacementSystem
 )
 from .attr import AxisVMAttributes
+from .axresult import IAxisVMStresses
 
 surfacetype_to_str = {
     0: "Hole",
@@ -108,7 +110,7 @@ def get_surface_attributes(
 
 
 class SurfaceMixin:
-    def surface_edges(self, topology=None):
+    def surface_edges(self, topology: ndarray = None) -> ndarray:
         """Returns the edges of the surface."""
         topo = self.topology() if topology is None else topology
         w = topo.widths()
@@ -124,19 +126,19 @@ class SurfaceMixin:
             eQ, _ = unique_topo_data(edges_Q4(topo[i8, :4]))
         return np.vstack([eT, eQ])
 
-    def triangles(self, topology=None):
+    def triangles(self, topology: ndarray = None) -> ndarray:
         """Returns the topology as a collection of triangles."""
         topo = self.topology() if topology is None else topology
         return triangulate(topo)
 
     def plot(
         self,
-        *args,
+        *,
         scalars=None,
         plot_edges=True,
         detach=False,
         backend="mpl",
-        **kwargs,
+        **__,
     ):
         """Plots the mesh using `matplotlib`."""
         topo = self.topology()
@@ -164,20 +166,20 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
         """Returns the node indices of the surface."""
         return self.parent.topology(self.Index)
 
-    def record(self):
+    def record(self) -> Any:
         """Returns the record of the surface."""
         return self.parent.records(self.Index)
 
-    def normal(self) -> Array:
+    def normal(self) -> ndarray:
         """Returns the normal vector of the surface."""
         return self.parent.normals(self.Index)
 
-    def transformation_matrix(self) -> Array:
+    def transformation_matrix(self) -> ndarray:
         """Returns the transformation matrix of the surface."""
         return self.parent.transformation_matrices(self.Index)
 
     @property
-    def tr(self):
+    def tr(self) -> ndarray:
         """Returns the transformation matrix of the surface."""
         return self.transformation_matrix()
 
@@ -194,12 +196,14 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
     def xlam_stresses(
         self,
         case: Union[str, Iterable] = None,
-        combination: str = None,
-        LoadCaseId: int = None,
-        LoadCombinationId: int = None,
-        DisplacementSystem: int = 0,
-        LoadLevelOrModeShapeOrTimeStep: int = 1,
-        AnalysisType=0,
+        combination: Union[str, Iterable] = None,
+        load_case_id: int = None,
+        load_combination_id: int = None,
+        displacement_system: int = 0,
+        load_level: int = None,
+        mode_shape: int = None,
+        time_step: int = None,
+        analysis_type: int = 0,
         frmt: str = "array",
         factor: Iterable = None,
     ) -> Union[dict, np.ndarray]:
@@ -208,20 +212,24 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
 
         Parameters
         ----------
-        DisplacementSystem: int, Optional
+        displacement_system: int, Optional
             0 for local, 1 for global. Default is 1.
-        LoadCaseId: int, Optional
+        load_case_id: int, Optional
             Default is None.
-        LoadLevelOrModeShapeOrTimeStep: int, Optional
+        load_level: int, Optional
             Default is None.
-        LoadCombinationId: int, Optional
+        mode_shape: int, Optional
+            Default is None.
+        time_step: int, Optional
+            Default is None.
+        load_combination_id: int, Optional
             Default is None.
         case: Union[str, Iterable], Optional
             The name of a loadcase or an iterable of indices.
             Default is None.
         combination: str, Optional
             The name of a load combination. Default is None.
-        AnalysisType: int, Optional
+        analysis_type: int, Optional
             Default is 0.
         frmt: str, Optional
             Controls the type of the result. With 'array' it is a
@@ -244,31 +252,19 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
             where nN is the number of nodes of the surface and nX is the number of stress
             components, which are:
 
-                0 : :math:`\\sigma_{x}` stress at the top, from bending
-
-                1 : :math:`\\sigma_{y}` stress at the top, from bending
-
-                2 : :math:`\\tau_{xy}` stress at the top, from bending
-
-                3 : :math:`\\sigma_{x}` stress at the bottom, from bending
-
-                4 : :math:`\\sigma_{y}` stress at the bottom, from bending
-
-                5 : :math:`\\tau_{xy}` stress at the bottom, from bending
-
-                6 : :math:`\\sigma_{x, max}` stress from stretching
-
-                7 : :math:`\\sigma_{y, max}` stress from stretching
-
-                8 : :math:`\\tau_{xy, max}` stress from stretching
-
-                9 : :math:`\\tau_{xz, max}` shear stress
-
-                10 : :math:`\\tau_{yz, max}` shear stress
-
-                11 : :math:`\\tau_{xz, r, max}` rolling shear stress
-
-                12 : :math:`\\tau_{yz, r, max}` rolling shear stress
+                * 0 : :math:`\\sigma_{x}` stress at the top, from bending
+                * 1 : :math:`\\sigma_{y}` stress at the top, from bending
+                * 2 : :math:`\\tau_{xy}` stress at the top, from bending
+                * 3 : :math:`\\sigma_{x}` stress at the bottom, from bending
+                * 4 : :math:`\\sigma_{y}` stress at the bottom, from bending
+                * 5 : :math:`\\tau_{xy}` stress at the bottom, from bending
+                * 6 : :math:`\\sigma_{x, max}` stress from stretching
+                * 7 : :math:`\\sigma_{y, max}` stress from stretching
+                * 8 : :math:`\\tau_{xy, max}` stress from stretching
+                * 9 : :math:`\\tau_{xz, max}` shear stress
+                * 10 : :math:`\\tau_{yz, max}` shear stress
+                * 11 : :math:`\\tau_{xz, r, max}` rolling shear stress
+                * 12 : :math:`\\tau_{yz, r, max}` rolling shear stress
 
             If frmt is 'dict', the stresses are returned as a dictionary of 1d NumPy arrays,
             where indices from 0 to 12 are the keys of the values at the corders.
@@ -292,9 +288,11 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
                             case=c,
                             frmt="array",
                             factor=f,
-                            AnalysisType=AnalysisType,
-                            LoadLevelOrModeShapeOrTimeStep=LoadLevelOrModeShapeOrTimeStep,
-                            DisplacementSystem=DisplacementSystem,
+                            analysis_type=analysis_type,
+                            load_level=load_level,
+                            mode_shape=mode_shape,
+                            time_step=time_step,
+                            displacement_system=displacement_system,
                         )
                         for c, f in zip(case, factor)
                     ]
@@ -305,9 +303,11 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
                         case=c,
                         frmt=frmt,
                         factor=1.0,
-                        AnalysisType=AnalysisType,
-                        LoadLevelOrModeShapeOrTimeStep=LoadLevelOrModeShapeOrTimeStep,
-                        DisplacementSystem=DisplacementSystem,
+                        analysis_type=analysis_type,
+                        load_level=load_level,
+                        mode_shape=mode_shape,
+                        time_step=time_step,
+                        displacement_system=displacement_system,
                     )
                     for c in case
                 ]
@@ -316,37 +316,49 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
             return res
 
         axm = self.model
-        stresses = axm.Results.Stresses
+        stresses: IAxisVMStresses = axm.Results.Stresses
 
-        LoadCaseId, LoadCombinationId = stresses._get_case_or_component(
+        load_case_id, load_combination_id = stresses._get_case_or_component(
             case=case,
             combination=combination,
-            LoadCaseId=LoadCaseId,
-            LoadCombinationId=LoadCombinationId,
+            load_case_id=load_case_id,
+            load_combination_id=load_combination_id,
         )
+
         config = dict(
-            LoadCaseId=LoadCaseId,
-            LoadCombinationId=LoadCombinationId,
-            LoadLevelOrModeShapeOrTimeStep=LoadLevelOrModeShapeOrTimeStep,
-            DisplacementSystem=DisplacementSystem,
+            load_case_id=load_case_id,
+            load_combination_id=load_combination_id,
+            load_level=load_level,
+            mode_shape=mode_shape,
+            time_step=time_step,
+            displacement_system=displacement_system,
         )
         stresses.config(**config)
 
-        if LoadCaseId is not None:
+        LoadLevelOrModeShapeOrTimeStep = _LoadLevelOrModeShapeOrTimeStep(
+            load_level=load_level,
+            mode_shape=mode_shape,
+            time_step=time_step,
+            return_none=True,
+        )
+        if LoadLevelOrModeShapeOrTimeStep is None:
+            LoadLevelOrModeShapeOrTimeStep = 1
+
+        if load_case_id is not None:
             getter = partial(
                 get_xlam_strs_case,
                 stresses,
-                LoadCaseId,
+                load_case_id,
                 LoadLevelOrModeShapeOrTimeStep,
-                AnalysisType,
+                analysis_type,
             )
-        elif LoadCombinationId is not None:
+        elif load_combination_id is not None:
             getter = partial(
                 get_xlam_strs_comb,
                 stresses,
-                LoadCombinationId,
+                load_combination_id,
                 LoadLevelOrModeShapeOrTimeStep,
-                AnalysisType,
+                analysis_type,
             )
         factor = 1.0 if factor is None else float(factor)
         res = factor * np.array(RXLAMSurfaceStresses2list(getter(self.Index)))
@@ -357,27 +369,27 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
 
     def critical_xlam_efficiency(
         self,
-        *args,
-        CombinationType: int = 7,
-        AnalysisType: int = 0,
-        Component=4,
-        MinMaxType: int = 1,
+        *,
+        combination_type: int = 7,
+        analysis_type: int = 0,
+        component: int = 4,
+        minmax_type: int = 1,
         **kwargs,
-    ):
+    ) -> Tuple[Iterable]:
         """
         Returns the critical efficiency of a component, and also data on
         the combination that yields it.
 
         Parameters
         ----------
-        MinMaxType: EMinMaxType, Optional
-            0 for min, 1 for max, 2 for minmax. Default is 1.
-        Component: EXLAMSurfaceEfficiency, Optional
-            Default is 4, which refers to the maximum overall efficiency.
-        CombinationType: ECombinationType, Optional
-            Default is 7 wich refers to the worst case of ULS combinations.
-        AnalysisType: EAnalysisType, Optional
-            Default is 0 which refers to linear statics.
+        minmax_type: int, Optional
+            According to EMinMaxType. 0 for min, 1 for max, 2 for minmax. Default is 1.
+        component: int, Optional
+            According to EXLAMSurfaceEfficiency. Default is 4, which refers to the maximum overall efficiency.
+        combination_type: int, Optional
+            According to ECombinationType. Default is 7 wich refers to the worst case of ULS combinations.
+        analysis_type: int, Optional
+            According to EAnalysisType. Default is 0 which refers to linear statics.
 
         Notes
         -----
@@ -390,24 +402,20 @@ class IAxisVMSurface(AxisVMModelItem, SurfaceMixin):
             A 2d float NumPy array of shape (nN, nX), where nN is the number of nodes
             of the surface and nX is the number of efficiency components, which are:
 
-                0 : M - N - 0
-
-                1 : M - N - 90
-
-                2 : V - T
-
-                3 : Vr - N
-
-                4 : max
+                * 0 : M - N - 0
+                * 1 : M - N - 90
+                * 2 : V - T
+                * 3 : Vr - N
+                * 4 : max
         """
         axm = self.model
-        stresses = axm.Results.Stresses
+        stresses: IAxisVMStresses = axm.Results.Stresses
         params = dict(
             SurfaceId=self.Index,
-            MinMaxType=MinMaxType,
-            CombinationType=CombinationType,
-            AnalysisType=AnalysisType,
-            Component=Component,
+            MinMaxType=minmax_type,
+            CombinationType=combination_type,
+            AnalysisType=analysis_type,
+            Component=component,
         )
         params.update(kwargs)
         rec, _, factors, loadcases, _ = stresses.GetCriticalXLAMSurfaceEfficiency(
@@ -433,37 +441,40 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
     __itemcls__ = IAxisVMSurface
 
     @property
-    def tr(self) -> Array:
+    def tr(self) -> ndarray:
         """Returns the transformation matrices for all surfaces."""
         return self.transformation_matrices()
 
     @property
-    def t(self) -> Array:
+    def t(self) -> ndarray:
         """Returns the thicknessws of all surfaces."""
         k = "Thickness"
         return np.array(self.get_surface_attributes(fields=[k])[k])
 
     @property
-    def n(self) -> Array:
+    def n(self) -> ndarray:
         """Returns the normal vectors of all surfaces."""
         return self.normals()
 
     @property
-    def frames(self) -> Array:
+    def frames(self) -> ndarray:
         """Returns the transformation matrices for all surfaces."""
         return self.transformation_matrices()
 
     @property
-    def attributes(self):
+    def attributes(self) -> dict:
         """Returns the attributes of all surfaces as a dictionary."""
         return self.get_attributes()
 
     @property
-    def surface_attributes(self):
+    def surface_attributes(self) -> AxisVMAttributes:
         """Returns the surface attributes of all surfaces as a dictionary."""
         return self.get_surface_attributes()
 
-    def topology(self, *args, i=None) -> TopologyArray:
+    def topology(self, *args, i: Union[int, Iterable[int]] = None) -> TopologyArray:
+        """
+        Returns the topology of the surfaces as an instance of :class:`sigmaepsilon.mesh.TopologyArray`.
+        """
         i = i if len(args) == 0 else args[0]
         if isinstance(i, int):
             s = self[i]._wrapped
@@ -492,10 +503,23 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
             return TopologyArray(ak.Array(list(map(fnc, ids))))
         return None
 
-    def records(self, *args, **kwargs) -> Iterable:
+    def records(self, *args, **kwargs) -> Iterable[dict]:
+        """
+        Returns the raw attributes of the surfaces.
+        """
         return self._get_attributes_raw(*args, **kwargs)[0]
 
-    def get_attributes(self, *args, i=None, fields=None, raw=False, **kwargs):
+    def get_attributes(
+        self,
+        *args,
+        i: Union[int, Iterable[int]] = None,
+        fields: Iterable[str] = None,
+        raw: bool = False,
+        **__,
+    ) -> Iterable[dict]:
+        """
+        Returns the attributes of the surfaces.
+        """
         i = i if len(args) == 0 else args[0]
         dfields, afields = [], []
         if fields is None:
@@ -549,9 +573,13 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
         return self.model.Surfaces.BulkGetSurfaces(ids)
 
     def get_surface_attributes(self, *args, **kwargs) -> AxisVMAttributes:
+        """Returns the surface attributes of all surfaces as a dictionary."""
         return get_surface_attributes(self, *args, **kwargs)
 
-    def normals(self, *args, i=None) -> Array:
+    def normals(self, *args, i=None) -> ndarray:
+        """
+        Returns the normal vectors of the surfaces as a NumPy array.
+        """
         i = i if len(args) == 0 else args[0]
         if isinstance(i, int):
             s = self[i]._wrapped
@@ -572,7 +600,10 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
         xyz = map(lambda p: [p.x, p.y, p.z], m)
         return np.array(list(xyz), dtype=float)
 
-    def transformation_matrices(self, *args, i=None) -> Array:
+    def transformation_matrices(self, *args, i: Union[int, Iterable[int]]=None) -> ndarray:
+        """
+        Returns the transformation matrices of the surfaces as a NumPy array.
+        """
         i = i if len(args) == 0 else args[0]
         if isinstance(i, int):
             s = self[i]._wrapped
@@ -590,29 +621,31 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
 
     def generalized_surface_forces(
         self,
-        *args,
-        case=None,
-        combination=None,
-        DisplacementSystem=None,
-        LoadCaseId=None,
-        LoadLevelOrModeShapeOrTimeStep=None,
-        LoadCombinationId=None,
-        **kwargs,
-    ):
+        *,
+        case:str=None,
+        combination:str=None,
+        displacement_system:int=None,
+        load_case_id:int=None,
+        load_combination_id:int=None,
+        load_level: int = None,
+        mode_shape: int = None,
+        time_step: int = None,
+        **__,
+    ) -> ak.Array:
         axm = self.model
         if case is not None:
-            LoadCombinationId = None
+            load_combination_id = None
             if isinstance(case, str):
                 LoadCases = axm.LoadCases
                 imap = {LoadCases.Name[i]: i for i in range(1, LoadCases.Count + 1)}
                 if case in imap:
-                    LoadCaseId = imap[case]
+                    load_case_id = imap[case]
                 else:
                     raise KeyError("Unknown case with name '{}'".format(case))
             elif isinstance(case, int):
-                LoadCaseId = case
+                load_case_id = case
         elif combination is not None:
-            LoadCaseId = None
+            load_case_id = None
             if isinstance(combination, str):
                 LoadCombinations = axm.LoadCombinations
                 imap = {
@@ -620,57 +653,67 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
                     for i in range(1, LoadCombinations.Count + 1)
                 }
                 if combination in imap:
-                    LoadCombinationId = imap[combination]
+                    load_combination_id = imap[combination]
                 else:
                     raise KeyError(
                         "Unknown combination with name '{}'".format(combination)
                     )
             elif isinstance(combination, int):
-                LoadCombinationId = combination
+                load_combination_id = combination
+        
         forces = axm.Results.Forces
-        if DisplacementSystem is None:
-            DisplacementSystem = 1  # global
-        if isinstance(DisplacementSystem, int):
-            forces.DisplacementSystem = DisplacementSystem
-        if LoadCaseId is not None:
-            forces.LoadCaseId = LoadCaseId
-        if LoadCombinationId is not None:
-            forces.LoadCombinationId = LoadCombinationId
-        if LoadLevelOrModeShapeOrTimeStep is None:
-            LoadLevelOrModeShapeOrTimeStep = 1
-        forces.LoadLevelOrModeShapeOrTimeStep = LoadLevelOrModeShapeOrTimeStep
-        if LoadCaseId is not None:
+        
+        forces.DisplacementSystem = _DisplacementSystem(displacement_system)
+            
+        if load_case_id is not None:
+            forces.LoadCaseId = load_case_id
+            
+        if load_combination_id is not None:
+            forces.LoadCombinationId = load_combination_id
+                    
+        forces.LoadLevelOrModeShapeOrTimeStep = _LoadLevelOrModeShapeOrTimeStep(
+            load_level=load_level,
+            mode_shape=mode_shape,
+            time_step=time_step,
+            default=1
+        )
+        
+        if load_case_id is not None:
             recs = forces.AllSurfaceForcesByLoadCaseId()[0]
-        elif LoadCombinationId is not None:
+            
+        elif load_combination_id is not None:
             recs = forces.AllSurfaceForcesByLoadCombinationId()[0]
+            
         return ak.Array(list(map(RSurfaceForces2list, recs)))
 
     def surface_stresses(
         self,
-        *args,
-        case=None,
-        combination=None,
-        DisplacementSystem=None,
-        LoadCaseId=None,
-        LoadLevelOrModeShapeOrTimeStep=None,
-        LoadCombinationId=None,
-        z="m",
-        **kwargs,
-    ):
+        *,
+        case:str=None,
+        combination:str=None,
+        displacement_system:Union[str, int]=None,
+        load_case_id:int=None,
+        load_level: int = None,
+        mode_shape: int = None,
+        time_step: int = None,
+        load_combination_id:int=None,
+        z:str="m",
+        **__,
+    ) -> ak.Array:
         axm = self.model
         if case is not None:
-            LoadCombinationId = None
+            load_combination_id = None
             if isinstance(case, str):
                 LoadCases = axm.LoadCases
                 imap = {LoadCases.Name[i]: i for i in range(1, LoadCases.Count + 1)}
                 if case in imap:
-                    LoadCaseId = imap[case]
+                    load_case_id = imap[case]
                 else:
                     raise KeyError("Unknown case with name '{}'".format(case))
             elif isinstance(case, int):
-                LoadCaseId = case
+                load_case_id = case
         elif combination is not None:
-            LoadCaseId = None
+            load_case_id = None
             if isinstance(combination, str):
                 LoadCombinations = axm.LoadCombinations
                 imap = {
@@ -678,31 +721,39 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
                     for i in range(1, LoadCombinations.Count + 1)
                 }
                 if combination in imap:
-                    LoadCombinationId = imap[combination]
+                    load_combination_id = imap[combination]
                 else:
                     raise KeyError(
                         "Unknown combination with name '{}'".format(combination)
                     )
             elif isinstance(combination, int):
-                LoadCombinationId = combination
+                load_combination_id = combination
             else:
-                raise TypeError("LoadCombinationId must be a string or an integer.")
-        resobj = axm.Results.Stresses
-        if DisplacementSystem is None:
-            DisplacementSystem = 1  # global
-        if isinstance(DisplacementSystem, int):
-            resobj.DisplacementSystem = DisplacementSystem
-        if LoadCaseId is not None:
-            resobj.LoadCaseId = LoadCaseId
-        if LoadCombinationId is not None:
-            resobj.LoadCombinationId = LoadCombinationId
-        if LoadLevelOrModeShapeOrTimeStep is None:
-            LoadLevelOrModeShapeOrTimeStep = 1
-        resobj.LoadLevelOrModeShapeOrTimeStep = LoadLevelOrModeShapeOrTimeStep
-        if LoadCaseId is not None:
+                raise TypeError("'load_combination_id' must be a string or an integer.")
+        
+        resobj: IAxisVMStresses = axm.Results.Stresses
+        
+        resobj.DisplacementSystem = _DisplacementSystem(displacement_system)
+                
+        if load_case_id is not None:
+            resobj.LoadCaseId = load_case_id
+            
+        if load_combination_id is not None:
+            resobj.LoadCombinationId = load_combination_id
+            
+        resobj.LoadLevelOrModeShapeOrTimeStep = _LoadLevelOrModeShapeOrTimeStep(
+            load_level=load_level,
+            mode_shape=mode_shape,
+            time_step=time_step,
+            default=1
+        )
+        
+        if load_case_id is not None:
             recs = resobj.AllSurfaceStressesByLoadCaseId()[0]
-        elif LoadCombinationId is not None:
+            
+        elif load_combination_id is not None:
             recs = resobj.AllSurfaceStressesByLoadCombinationId()[0]
+            
         foo = partial(RSurfaceStresses2list, mode=z)
         return ak.Array(list(map(foo, recs)))
 

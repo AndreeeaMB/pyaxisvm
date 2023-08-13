@@ -42,12 +42,13 @@ class IAxisVMNodes(AxisVMModelItems, SurfaceMixin):
         ----------
         **kwargs : dict, Optional
             Possible keyword arguments:
-                * node : a single node, returns a sigle record
-                * nodes : a list of nodes, returns a list of records
-                * ID : int, a single nodeID
-                * IDs : list of int, a sequence of nodeIDs
-                * UID : int, a single nodeUID
-                * UIDs : list of int, a sequence of nodeUIDs
+            
+            * node : a single node, returns a sigle record
+            * nodes : a list of nodes, returns a list of records
+            * ID : int, a single nodeID
+            * IDs : list of int, a sequence of nodeIDs
+            * UID : int, a single nodeUID
+            * UIDs : list of int, a sequence of nodeUIDs
 
         Returns
         -------
@@ -142,17 +143,12 @@ class IAxisVMNodes(AxisVMModelItems, SurfaceMixin):
 
         Possible keys and values
 
-            node : a single node record
-
-            nodes : a list of node records
-
-            ID : int, a single node index
-
-            IDs : [int], a sequence of node indices
-
-            UID : int, a single unique node index
-
-            UIDs : [int], a sequence of unique node indices
+        * node : a single node record
+        * nodes : a list of node records
+        * ID : int, a single node index
+        * IDs : [int], a sequence of node indices
+        * UID : int, a single unique node index
+        * UIDs : [int], a sequence of unique node indices
 
         Note
         ----

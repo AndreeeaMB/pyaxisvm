@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
+from typing import Union, Tuple
 from .core.wrap import AxWrapper
+from .core.utils import _LoadLevelOrModeShapeOrTimeStep
 
 
 class AxisVMResultItem(AxWrapper):
@@ -14,32 +16,32 @@ class AxisVMResultItem(AxWrapper):
         self.parent = parent
 
     @property
-    def model(self):
+    def model(self) -> AxWrapper:
         return self.parent.model
 
     def _get_case_or_component(
         self,
-        *args,
-        case=None,
-        combination=None,
-        LoadCaseId=None,
-        LoadCombinationId=None,
-        **kwargs,
-    ):
+        *,
+        case:Union[str, int]=None,
+        combination:Union[str, int]=None,
+        load_case_id:int=None,
+        load_combination_id:int=None,
+        **__,
+    ) -> Tuple[Union[None, int]]:
         axm = self.model
         if case is not None:
-            LoadCombinationId = None
+            load_combination_id = None
             if isinstance(case, str):
                 LoadCases = axm.LoadCases
                 imap = {LoadCases.Name[i]: i for i in range(1, LoadCases.Count + 1)}
                 if case in imap:
-                    LoadCaseId = imap[case]
+                    load_case_id = imap[case]
                 else:
                     raise KeyError("Unknown case with name '{}'".format(case))
             elif isinstance(case, int):
-                LoadCaseId = case
+                load_case_id = case
         elif combination is not None:
-            LoadCaseId = None
+            load_case_id = None
             if isinstance(combination, str):
                 LoadCombinations = axm.LoadCombinations
                 imap = {
@@ -47,30 +49,42 @@ class AxisVMResultItem(AxWrapper):
                     for i in range(1, LoadCombinations.Count + 1)
                 }
                 if combination in imap:
-                    LoadCombinationId = imap[combination]
+                    load_combination_id = imap[combination]
                 else:
                     raise KeyError(
                         "Unknown combination with name '{}'".format(combination)
                     )
             elif isinstance(combination, int):
-                LoadCombinationId = combination
-        return LoadCaseId, LoadCombinationId
+                load_combination_id = combination
+        return load_case_id, load_combination_id
 
     def config(
         self,
         *args,
-        DisplacementSystem=None,
-        LoadLevelOrModeShapeOrTimeStep=None,
+        displacement_system:int=None,
+        load_level: int=None,
+        mode_shape: int=None,
+        time_step: int=None,
         **kwargs,
     ):
         LoadCaseId, LoadCombinationId = self._get_case_or_component(*args, **kwargs)
         resobj = self._wrapped
-        if isinstance(DisplacementSystem, int):
-            resobj.DisplacementSystem = DisplacementSystem
+        
+        if isinstance(displacement_system, int):
+            resobj.DisplacementSystem = displacement_system
+            
         if LoadCaseId is not None:
             resobj.LoadCaseId = LoadCaseId
+            
         if LoadCombinationId is not None:
             resobj.LoadCombinationId = LoadCombinationId
+            
+        LoadLevelOrModeShapeOrTimeStep = _LoadLevelOrModeShapeOrTimeStep(
+                load_level=load_level,
+                mode_shape=mode_shape,
+                time_step=time_step,
+                return_none=True
+            )
         if LoadLevelOrModeShapeOrTimeStep is not None:
             resobj.LoadLevelOrModeShapeOrTimeStep = LoadLevelOrModeShapeOrTimeStep
 
