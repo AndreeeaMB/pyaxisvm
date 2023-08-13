@@ -274,17 +274,14 @@ class IAxisVMModel(AxWrapper):
             disps.load_combination_id = load_combination_id
 
         disps.LoadLevelOrModeShapeOrTimeStep = _LoadLevelOrModeShapeOrTimeStep(
-            load_level=load_level,
-            mode_shape=mode_shape,
-            time_step=time_step,
-            default=1
+            load_level=load_level, mode_shape=mode_shape, time_step=time_step, default=1
         )
 
         if load_case_id is not None:
             recs = disps.AllNodalDisplacementsByLoadCaseId()[0]
         elif load_combination_id is not None:
             recs = disps.AllNodalDisplacementsByLoadCombinationId()[0]
-            
+
         return np.array(list(map(RDisplacementValues2list, recs)))
 
     def generalized_surface_forces(self, *args, **kwargs) -> ndarray:
@@ -386,7 +383,7 @@ class IAxisVMModels(AxWrapper):
 
     __itemcls__ = IAxisVMModel
 
-    def __init__(self, *args, app: AxWrapper=None, **kwargs):
+    def __init__(self, *args, app: AxWrapper = None, **kwargs):
         super().__init__(*args, **kwargs)
         self._app = app
 

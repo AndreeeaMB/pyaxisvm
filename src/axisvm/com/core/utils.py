@@ -456,33 +456,37 @@ def xlmscomp2int(scomp: str) -> int:
 
 
 def _LoadLevelOrModeShapeOrTimeStep(
-    load_level: int=None,
-    mode_shape: int=None,
-    time_step: int=None,
+    load_level: int = None,
+    mode_shape: int = None,
+    time_step: int = None,
     return_none: bool = False,
-    default: int=None
+    default: int = None,
 ) -> int:
     params = [load_level, mode_shape, time_step]
-    is_param = list(map(lambda x : x is not None, params))
+    is_param = list(map(lambda x: x is not None, params))
     num_params = sum(is_param)
-    
-    if num_params == 0: 
+
+    if num_params == 0:
         if return_none:
-            assert not default, "If a default value is provided, 'return_none' should be False"
+            assert (
+                not default
+            ), "If a default value is provided, 'return_none' should be False"
             return None
         elif default:
             return default
-    
+
     if not sum(is_param) == 1:
-        raise ValueError("Exactly one of 'load_level', 'mode_sape' and 'time_step' must be provided")
-    
+        raise ValueError(
+            "Exactly one of 'load_level', 'mode_sape' and 'time_step' must be provided"
+        )
+
     return params[np.where(np.array(is_param))[0][0]]
 
 
 def _DisplacementSystem(displacement_system: Union[str, int]) -> int:
     if displacement_system is None:
         return 1  # global
-    
+
     if isinstance(displacement_system, str):
         if displacement_system == "local":
             return 0
@@ -492,5 +496,5 @@ def _DisplacementSystem(displacement_system: Union[str, int]) -> int:
             raise ValueError("Invalid specification for the displacement system")
     elif isinstance(displacement_system, int):
         return displacement_system
-    
+
     raise Exception("Invalid specification for the displacement system")

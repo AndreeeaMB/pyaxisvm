@@ -36,7 +36,7 @@ from .core.utils import (
     get_xlam_effs_crit,
     RXLAMSurfaceEfficiencies2list,
     _DisplacementSystem,
-    _LoadLevelOrModeShapeOrTimeStep
+    _LoadLevelOrModeShapeOrTimeStep,
 )
 from .attr import AxisVMAttributes, squeeze_attributes as dsqueeze
 from .axsurface import SurfaceMixin, get_surface_attributes, surface_attr_fields
@@ -331,7 +331,7 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         coords, topo, inds = self.detach_mesh(return_indices=True, triangulate=True)
         triobj = tri.Triangulation(coords[:, 0], coords[:, 1], triangles=topo)
         dofsol = dofsol[inds - 1]
-        
+
         displacement_system = _DisplacementSystem(displacement_system)
         if displacement_system == 0:
             source = CartesianFrame(dim=3)
@@ -339,7 +339,7 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
             dofsol[:, :3] = Vector(dofsol[:, :3], frame=source).show(target)
             dofsol[:, 3:6] = Vector(dofsol[:, 3:6], frame=source).show(target)
         component_index = dcomp2int(component)
-            
+
         if mpl_kw is None:
             mpl_kw = dict(
                 nlevels=15,
@@ -349,13 +349,13 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
                 cbpad="10%",
                 cbsize="10%",
                 cbpos="right",
-            )    
-        
+            )
+
         compstr = component.upper()
         params = [self.Index, compstr]
         tmpl = "Domain {} - {}"
         mpl_kw["title"] = tmpl.format(*params)
-        
+
         triplot(triobj, data=dofsol[:, component_index], **mpl_kw)
 
     def plot_forces(
@@ -396,7 +396,7 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         coords, topo = self.detach_mesh(triangulate=False)
         topo, forces = triang(topo, data=forces)  # triangulate with data
         triobj = tri.Triangulation(coords[:, 0], coords[:, 1], triangles=topo)
-        
+
         if mpl_kw is None:
             mpl_kw = dict(
                 nlevels=15,
@@ -412,7 +412,7 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         params = [self.Index, compstr]
         tmpl = "Domain {} - {}"
         mpl_kw["title"] = tmpl.format(*params)
-        
+
         triplot(triobj, data=forces[:, :3, i], **mpl_kw)
 
     def plot_stresses(
@@ -518,12 +518,12 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
 
     def surface_stresses(
         self,
-        case:Union[str, int]=None,
-        combination:Union[str, int]=None,
-        z:str="m",
-        load_case_id:int=None,
-        load_combination_id:int=None,
-        displacement_system:int=0,
+        case: Union[str, int] = None,
+        combination: Union[str, int] = None,
+        z: str = "m",
+        load_case_id: int = None,
+        load_combination_id: int = None,
+        displacement_system: int = 0,
         load_level: int = None,
         mode_shape: int = None,
         time_step: int = None,
@@ -575,15 +575,15 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
 
     def xlam_surface_stresses(
         self,
-        case:Union[str, int]=None,
-        combination:Union[str, int]=None,
-        load_case_id:int=None,
-        load_combination_id:int=None,
+        case: Union[str, int] = None,
+        combination: Union[str, int] = None,
+        load_case_id: int = None,
+        load_combination_id: int = None,
         load_level: int = None,
         mode_shape: int = None,
         time_step: int = None,
         displacement_system: Union[str, int] = 0,
-        analysis_type:int=0,
+        analysis_type: int = 0,
         frmt="array",
         factor=None,
     ) -> Union[ak.Array, dict]:
@@ -718,7 +718,7 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
             displacement_system=displacement_system,
         )
         stresses.config(**config)
-        
+
         LoadLevelOrModeShapeOrTimeStep = _LoadLevelOrModeShapeOrTimeStep(
             load_level=load_level,
             mode_shape=mode_shape,

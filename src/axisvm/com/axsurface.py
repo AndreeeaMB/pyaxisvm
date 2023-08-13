@@ -26,7 +26,7 @@ from .core.utils import (
     get_xlam_strs_case,
     get_xlam_strs_comb,
     _LoadLevelOrModeShapeOrTimeStep,
-    _DisplacementSystem
+    _DisplacementSystem,
 )
 from .attr import AxisVMAttributes
 from .axresult import IAxisVMStresses
@@ -600,7 +600,9 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
         xyz = map(lambda p: [p.x, p.y, p.z], m)
         return np.array(list(xyz), dtype=float)
 
-    def transformation_matrices(self, *args, i: Union[int, Iterable[int]]=None) -> ndarray:
+    def transformation_matrices(
+        self, *args, i: Union[int, Iterable[int]] = None
+    ) -> ndarray:
         """
         Returns the transformation matrices of the surfaces as a NumPy array.
         """
@@ -622,11 +624,11 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
     def generalized_surface_forces(
         self,
         *,
-        case:str=None,
-        combination:str=None,
-        displacement_system:int=None,
-        load_case_id:int=None,
-        load_combination_id:int=None,
+        case: str = None,
+        combination: str = None,
+        displacement_system: int = None,
+        load_case_id: int = None,
+        load_combination_id: int = None,
         load_level: int = None,
         mode_shape: int = None,
         time_step: int = None,
@@ -660,44 +662,41 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
                     )
             elif isinstance(combination, int):
                 load_combination_id = combination
-        
+
         forces = axm.Results.Forces
-        
+
         forces.DisplacementSystem = _DisplacementSystem(displacement_system)
-            
+
         if load_case_id is not None:
             forces.LoadCaseId = load_case_id
-            
+
         if load_combination_id is not None:
             forces.LoadCombinationId = load_combination_id
-                    
+
         forces.LoadLevelOrModeShapeOrTimeStep = _LoadLevelOrModeShapeOrTimeStep(
-            load_level=load_level,
-            mode_shape=mode_shape,
-            time_step=time_step,
-            default=1
+            load_level=load_level, mode_shape=mode_shape, time_step=time_step, default=1
         )
-        
+
         if load_case_id is not None:
             recs = forces.AllSurfaceForcesByLoadCaseId()[0]
-            
+
         elif load_combination_id is not None:
             recs = forces.AllSurfaceForcesByLoadCombinationId()[0]
-            
+
         return ak.Array(list(map(RSurfaceForces2list, recs)))
 
     def surface_stresses(
         self,
         *,
-        case:str=None,
-        combination:str=None,
-        displacement_system:Union[str, int]=None,
-        load_case_id:int=None,
+        case: str = None,
+        combination: str = None,
+        displacement_system: Union[str, int] = None,
+        load_case_id: int = None,
         load_level: int = None,
         mode_shape: int = None,
         time_step: int = None,
-        load_combination_id:int=None,
-        z:str="m",
+        load_combination_id: int = None,
+        z: str = "m",
         **__,
     ) -> ak.Array:
         axm = self.model
@@ -730,30 +729,27 @@ class IAxisVMSurfaces(AxisVMModelItems, SurfaceMixin):
                 load_combination_id = combination
             else:
                 raise TypeError("'load_combination_id' must be a string or an integer.")
-        
+
         resobj: IAxisVMStresses = axm.Results.Stresses
-        
+
         resobj.DisplacementSystem = _DisplacementSystem(displacement_system)
-                
+
         if load_case_id is not None:
             resobj.LoadCaseId = load_case_id
-            
+
         if load_combination_id is not None:
             resobj.LoadCombinationId = load_combination_id
-            
+
         resobj.LoadLevelOrModeShapeOrTimeStep = _LoadLevelOrModeShapeOrTimeStep(
-            load_level=load_level,
-            mode_shape=mode_shape,
-            time_step=time_step,
-            default=1
+            load_level=load_level, mode_shape=mode_shape, time_step=time_step, default=1
         )
-        
+
         if load_case_id is not None:
             recs = resobj.AllSurfaceStressesByLoadCaseId()[0]
-            
+
         elif load_combination_id is not None:
             recs = resobj.AllSurfaceStressesByLoadCombinationId()[0]
-            
+
         foo = partial(RSurfaceStresses2list, mode=z)
         return ak.Array(list(map(foo, recs)))
 

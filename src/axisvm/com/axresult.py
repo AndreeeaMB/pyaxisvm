@@ -22,10 +22,10 @@ class AxisVMResultItem(AxWrapper):
     def _get_case_or_component(
         self,
         *,
-        case:Union[str, int]=None,
-        combination:Union[str, int]=None,
-        load_case_id:int=None,
-        load_combination_id:int=None,
+        case: Union[str, int] = None,
+        combination: Union[str, int] = None,
+        load_case_id: int = None,
+        load_combination_id: int = None,
         **__,
     ) -> Tuple[Union[None, int]]:
         axm = self.model
@@ -61,30 +61,30 @@ class AxisVMResultItem(AxWrapper):
     def config(
         self,
         *args,
-        displacement_system:int=None,
-        load_level: int=None,
-        mode_shape: int=None,
-        time_step: int=None,
+        displacement_system: int = None,
+        load_level: int = None,
+        mode_shape: int = None,
+        time_step: int = None,
         **kwargs,
     ):
         LoadCaseId, LoadCombinationId = self._get_case_or_component(*args, **kwargs)
         resobj = self._wrapped
-        
+
         if isinstance(displacement_system, int):
             resobj.DisplacementSystem = displacement_system
-            
+
         if LoadCaseId is not None:
             resobj.LoadCaseId = LoadCaseId
-            
+
         if LoadCombinationId is not None:
             resobj.LoadCombinationId = LoadCombinationId
-            
+
         LoadLevelOrModeShapeOrTimeStep = _LoadLevelOrModeShapeOrTimeStep(
-                load_level=load_level,
-                mode_shape=mode_shape,
-                time_step=time_step,
-                return_none=True
-            )
+            load_level=load_level,
+            mode_shape=mode_shape,
+            time_step=time_step,
+            return_none=True,
+        )
         if LoadLevelOrModeShapeOrTimeStep is not None:
             resobj.LoadLevelOrModeShapeOrTimeStep = LoadLevelOrModeShapeOrTimeStep
 
