@@ -167,6 +167,10 @@ def download_bernoulli_grid():  # pragma: no cover
     -------
     str
         A path to an AxisVM model file on your filesystem.
+        
+    Note
+    ----
+    You need AxisVM version X5r4 or later to open this file.
 
     Example
     --------
@@ -176,7 +180,7 @@ def download_bernoulli_grid():  # pragma: no cover
     >>> axvm.model = examples.download_bernoulli_grid()
 
     """
-    return _download_and_read("console_H8_L2_X5r4.axs")
+    return _download_and_read("console_H8_L2_vX5r4.axs")
 
 
 def download_stem_stl():  # pragma: no cover
