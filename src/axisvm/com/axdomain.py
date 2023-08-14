@@ -1,49 +1,65 @@
 # -*- coding: utf-8 -*-
-from typing import Iterable, Callable, Union, List, Tuple
+from typing import Iterable, Callable, Union, List, Tuple, Iterator
 from functools import partial
 
 import numpy as np
 import awkward as ak
-from numpy import ndarray as Array
+from numpy import ndarray
 
 import matplotlib.tri as tri
 
-from dewloosh.core import issequence
+from sigmaepsilon.core import issequence
 
-from neumann.linalg import Vector
-from polymesh import PointCloud, CartesianFrame
-from dewloosh.mpl import triplot
-from polymesh import TopologyArray
-from polymesh.utils import decompose
-from polymesh.utils.topology import rewire
-from neumann.linalg.sparse.utils import count_cols
+from sigmaepsilon.math.linalg import Vector
+from sigmaepsilon.math.linalg.sparse.utils import count_cols
+from sigmaepsilon.mesh import PointCloud, CartesianFrame
+from sigmaepsilon.mesh import TopologyArray
+from sigmaepsilon.mesh.utils import decompose
+from sigmaepsilon.mesh.utils.topology import rewire
+from sigmaepsilon.plotting.mpl import triplot
 
 import axisvm
-from .core.wrap import AxisVMModelItem, AxisVMModelItems, AxItemCollection
-from .core.utils import (RMatrix3x3toNumPy, RMatrix2x2toNumPy,
-                         RSurfaceCoordinates2list, triangulate as triang,
-                         dcomp2int, fcomp2int, scomp2int, xlmscomp2int,
-                         RXLAMSurfaceStresses2list, RSurfaceStresses2list,
-                         get_xlam_strs_case, get_xlam_strs_comb,
-                         get_xlam_effs_crit, RXLAMSurfaceEfficiencies2list)
+from .core.wrap import AxisVMModelItem, AxisVMModelItems, AxItemCollection, AxWrapper
+from .core.utils import (
+    RMatrix3x3toNumPy,
+    RMatrix2x2toNumPy,
+    RSurfaceCoordinates2list,
+    triangulate as triang,
+    dcomp2int,
+    fcomp2int,
+    scomp2int,
+    xlmscomp2int,
+    RXLAMSurfaceStresses2list,
+    RSurfaceStresses2list,
+    get_xlam_strs_case,
+    get_xlam_strs_comb,
+    get_xlam_effs_crit,
+    RXLAMSurfaceEfficiencies2list,
+    _DisplacementSystem,
+    _LoadLevelOrModeShapeOrTimeStep,
+)
 from .attr import AxisVMAttributes, squeeze_attributes as dsqueeze
 from .axsurface import SurfaceMixin, get_surface_attributes, surface_attr_fields
+from .axresult import AxisVMResultItem, IAxisVMStresses
 
 
-__all__ = ['IAxisVMDomain', 'IAxisVMDomains']
+__all__ = ["IAxisVMDomain", "IAxisVMDomains"]
 
 
 class AxDomainCollection(AxItemCollection):
-
     def __getattribute__(self, attr):
         if hasattr(self[0], attr):
             _attr = getattr(self[0], attr)
             if isinstance(_attr, Callable):
-                def getter(i): return getattr(i, attr)
+
+                def getter(i):
+                    return getattr(i, attr)
+
                 funcs = map(getter, self)
 
                 def inner(*args, **kwargs):
                     return list(map(lambda f: f(*args, **kwargs), funcs))
+
                 return inner
             else:
                 return list(map(lambda i: getattr(i, attr), self))
@@ -55,19 +71,28 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
     """Wrapper for the `IAxisVMDomain` COM interface."""
 
     @property
-    def model(self):
+    def model(self) -> AxWrapper:
+        """
+        Returns the model of the domain.
+        """
         return self.parent.model
 
     @property
     def attributes(self) -> dict:
+        """
+        Returns the attributes.
+        """
         return dsqueeze(self.parent.get_attributes(i=self.Index))
 
     @property
     def domain_attributes(self) -> dict:
+        """
+        Returns the domain attributes.
+        """
         return dsqueeze(self.parent.get_domain_attributes(i=self.Index))
 
     @property
-    def tr(self) -> np.ndarray:
+    def tr(self) -> ndarray:
         """Returns the transformation matrix of the domain."""
         return self.transformation_matrix()
 
@@ -76,7 +101,7 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         """Returns True if the domain is an XLAM domain, False otherwise."""
         return self.parent.IsXLAM[self.Index]
 
-    def transformation_matrix(self) -> Array:
+    def transformation_matrix(self) -> ndarray:
         """Returns the transformation matrix of the domain."""
         return np.array(RMatrix3x3toNumPy(self.GetTrMatrix()[0]), dtype=float)
 
@@ -84,21 +109,20 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         """Returns the record of the domain."""
         return self.parent.records(self.Index)
 
-    def ABDS(self, *args, compose=True, **kwargs) -> Union[np.ndarray, List[np.ndarray]]:
+    def ABDS(self, *args, compose=True, **kwargs) -> Union[ndarray, List[ndarray]]:
         """
         Returns the ABDS matrix of the domain.
 
         Parameters
         ----------
-        compose : bool, Optional
+        compose: bool, Optional
             If True, the result is one matrix, otherwise 4 submatrices.
             Default is True.
 
         Returns
         -------
-        Union[np.ndarray, List[np.ndarray]]
+        Union[numpy.ndarray, List[ndarray]]
             One or four NumPy arrays.
-
         """
         A, B, D, S, *_ = self._wrapped.GetCustomStiffnessMatrix()
         A, B, D = [RMatrix3x3toNumPy(x) for x in (A, B, D)]
@@ -114,58 +138,91 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         else:
             return A, B, D, S
 
-    def GetCustomStiffnessMatrix(self, to_numpy=False, compose=True):
+    def GetCustomStiffnessMatrix(
+        self, to_numpy: bool = False, compose: bool = True
+    ) -> Iterable:
+        """
+        Returns the custom stiffness matrix, optionally as a NumPy array.
+
+        Paramters
+        ---------
+        to_numpy: bool, Optional
+            If `True`, the result is a NumPy array, otherwise the raw results
+            are returned. Default is False.
+        compose: bool, Optional
+            If True, the result is one matrix, otherwise 4 submatrices. Only if 'to_numpy' is `True`.
+            Default is True.
+
+        See also
+        --------
+        :func:`ABDS`
+        """
         if to_numpy:
             return self.ABDS(compose=compose)
         else:
             return self._wrapped.GetCustomStiffnessMatrix()
 
-    def coordinates(self, frame='global') -> np.ndarray:
+    def coordinates(self, frame: str = "global") -> PointCloud:
         """
-        Returns the coordinates of the points related to the domain.
+        Returns the coordinates of the points related to the domain
+        as an instance of :class:`sigmaepsilon.mesh.space.PointCloud`.
         """
         coords = self.model.coordinates()
         topo = self.topology()
         i = np.unique(topo) - 1
-        if frame == 'global':
+        if frame == "global":
             return coords[i]
-        elif frame == 'local':
+        elif frame == "local":
             source = CartesianFrame(dim=3)
             target = CartesianFrame(self.transformation_matrix())
             return PointCloud(coords[i], frame=source).show(target)
         else:
-            raise NotImplementedError
+            raise ValueError("'frame' must be 'local' or 'global'")
 
     def topology(self) -> TopologyArray:
         """
-        Returns the topology of the domain as a :class:`polymesh.topo.TopologyArray`.
+        Returns the topology of the domain as a :class:`sigmaepsilon.mesh.TopologyArray`.
         """
         axms = self.model.Surfaces._wrapped
         sIDs = self.MeshSurfaceIds
-        def fnc_corner(i): return list(axms.Item[i].GetContourPoints()[0])
-        def fnc_mid(i): return list(axms.Item[i].GetMidPoints()[0])
-        def fnc(i): return fnc_corner(i) + fnc_mid(i)
+
+        def fnc_corner(i):
+            return list(axms.Item[i].GetContourPoints()[0])
+
+        def fnc_mid(i):
+            return list(axms.Item[i].GetMidPoints()[0])
+
+        def fnc(i):
+            return fnc_corner(i) + fnc_mid(i)
+
         return TopologyArray(ak.Array(list(map(fnc, sIDs))))
 
     def surface_coordinates(self) -> ak.Array:
         """
-        Returns the coordinates for each surface of the domain as an 
+        Returns the coordinates for each surface of the domain as an
         :class:`awkward.Array` instance.
         """
         recs = self.GetMeshSurfacesCoordinates()[0]
         return ak.Array(list(map(RSurfaceCoordinates2list, recs)))
 
-    def detach_mesh(self, triangulate=False, return_indices=False) \
-            -> Tuple[PointCloud, TopologyArray]:
+    def detach_mesh(
+        self, triangulate: bool = False, return_indices: bool = False
+    ) -> Tuple[PointCloud, TopologyArray]:
         """
         Returns the coordinate and topology arrays of the domain,
         detached from the structure.
+
+        Parameters
+        ----------
+        triangulate: bool, Optional
+            If `True` the domain is first triangulated. Default is `False`.
+        return_indices: bool, Optional
+            If `True` the original node indices are also returned. Default is `False`.
 
         Returns
         -------
         Tuple[PointCloud, TopologyArray]
             The points and the topology as arrays.
-
         """
         topo = self.topology()
         inds = np.unique(topo) - 1
@@ -183,57 +240,62 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
             return coords, topo, inds + 1
         return coords, topo
 
-    def plot(self, *args, **mpl_kw):
+    def plot(self, *_, **mpl_kw) -> None:
         """
         Plots the surface using `matplotlib`.
 
         Parameters
         ----------
-        **mpl_kw : dict, Optional
-            Parameters to pass to :func:`dewloosh.mpl.triplot`
-
+        **mpl_kw: dict, Optional
+            Parameters to pass to :func:`sigmaepsilon.plotting.mpl.triplot`
         """
-        coords, topo, _ = self.detach_mesh(
-            return_indices=True, triangulate=True)
+        coords, topo, _ = self.detach_mesh(return_indices=True, triangulate=True)
         triobj = tri.Triangulation(coords[:, 0], coords[:, 1], triangles=topo)
         if mpl_kw is None:
-            mpl_kw = dict(axis='on')
+            mpl_kw = dict(axis="on")
         triplot(triobj, **mpl_kw)
 
-    def plot_dof_solution(self, *args, component='ez', mpl_kw: dict = None,
-                          DisplacementSystem=1, **kwargs):
+    def plot_dof_solution(
+        self,
+        *args,
+        component: str = "ez",
+        mpl_kw: dict = None,
+        displacement_system: Union[str, int] = 1,
+        **kwargs,
+    ) -> None:
         """
         Plots the degree of freedom solution of a domain using `matplotlib`.
 
         Parameters
         ----------
-        component : str, Optional
+        component: str, Optional
             Possible options are:
 
-                'ex' or 'ux' : displacement in X direction
-
-                'ey' or 'uy' : displacement in Y direction
-
-                'ez' or 'uz' : displacement in Z direction
-
-                'fx' or 'rotx' : rotation around X
-
-                'fy' or 'roty' : rotation around Y
-
-                'fz' or 'rotz' : rotation around Z
+            * 'ex' or 'ux' : displacement in X direction
+            * 'ey' or 'uy' : displacement in Y direction
+            * 'ez' or 'uz' : displacement in Z direction
+            * 'fx' or 'rotx' : rotation around X
+            * 'fy' or 'roty' : rotation around Y
+            * 'fz' or 'rotz' : rotation around Z
 
             Default is 'ez'.
-
-        DisplacementSystem : int, Optional
-            Sets the coordinate system in which results are to be returned.
-            Default is 1, which means the global system.
-
+        displacement_system: Union[str, int], Optional
+            Sets the displacement system in which results are to be returned. Possible values
+            are 1 (or 'global) and 0 (or 'local'). Default is 1, which means the global system.
         **mpl_kw : dict, Optional
-            Parameters to pass to :func:`dewloosh.mpl.triplot`
+            Parameters to pass to :func:`sigmaepsilon.plotting.mpl.triplot`
+        *args
+            Forwarded to :function:`~axisvm.com.axmodel.IAxisVMModel.dof_solution`.
+        **kwargs
+            Forwarded to :function:`~axisvm.com.axmodel.IAxisVMModel.dof_solution`.
 
         Notes
         -----
         This call does not require AxisVM to be visible.
+
+        See also
+        --------
+        :function:`~axisvm.com.axmodel.IAxisVMModel.dof_solution`
 
         Example
         -------
@@ -263,68 +325,69 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         Finally, close the application.
 
         >>> axvm.Quit()
-
         """
-        axm = self.model
-        dofsol = axm.dof_solution(*args, DisplacementSystem=1, **kwargs)
-        coords, topo, inds = self.detach_mesh(return_indices=True,
-                                              triangulate=True)
+        axm: AxWrapper = self.model
+        dofsol = axm.dof_solution(*args, displacement_system=1, **kwargs)
+        coords, topo, inds = self.detach_mesh(return_indices=True, triangulate=True)
         triobj = tri.Triangulation(coords[:, 0], coords[:, 1], triangles=topo)
-        dofsol = dofsol[inds-1]
-        if mpl_kw is None:
-            mpl_kw = dict(nlevels=15, cmap='jet', axis='on',
-                          offset=0., cbpad='10%', cbsize='10%',
-                          cbpos='right')
-        if isinstance(DisplacementSystem, str):
-            if DisplacementSystem == 'local':
-                DisplacementSystem = 0
-        if DisplacementSystem == 0:
+        dofsol = dofsol[inds - 1]
+
+        displacement_system = _DisplacementSystem(displacement_system)
+        if displacement_system == 0:
             source = CartesianFrame(dim=3)
             target = CartesianFrame(self.transformation_matrix())
             dofsol[:, :3] = Vector(dofsol[:, :3], frame=source).show(target)
             dofsol[:, 3:6] = Vector(dofsol[:, 3:6], frame=source).show(target)
-        i = dcomp2int(component)
-        #min, max = minmax(dofsol[:, i])
+        component_index = dcomp2int(component)
+
+        if mpl_kw is None:
+            mpl_kw = dict(
+                nlevels=15,
+                cmap="jet",
+                axis="on",
+                offset=0.0,
+                cbpad="10%",
+                cbsize="10%",
+                cbpos="right",
+            )
+
         compstr = component.upper()
         params = [self.Index, compstr]
         tmpl = "Domain {} - {}"
-        mpl_kw['title'] = tmpl.format(*params)
-        triplot(triobj, data=dofsol[:, i], **mpl_kw)
+        mpl_kw["title"] = tmpl.format(*params)
 
-    def plot_forces(self, *args, component='nx', mpl_kw: dict = None,
-                    smoothen=False, **kwargs):
+        triplot(triobj, data=dofsol[:, component_index], **mpl_kw)
+
+    def plot_forces(
+        self,
+        *args,
+        component: str = "nx",
+        mpl_kw: dict = None,
+        smoothen: bool = False,
+        **kwargs,
+    ) -> None:
         """
         Plots internal forces of a domain using `matplotlib`.
 
         Parameters
         ----------
-        component : str, Optional
+        component: str, Optional
             Possible options are:
 
-                'nx' : :math:`n_x` normal force
-
-                'ny' : :math:`n_y` normal force
-
-                'nxy' : :math:`n_{xy}` in plane shear force
-
-                'mx' : :math:`m_x` bending moment
-
-                'my' : :math:`m_y` bending moment
-
-                'mxy' : :math:`m_{xy}` twisting moment
-
-                'vx' or 'vxz' : :math:`v_x` shear force
-
-                'vy' or 'vyz' : :math:`v_y` shear force
+            * 'nx' : :math:`n_x` normal force
+            * 'ny' : :math:`n_y` normal force
+            * 'nxy' : :math:`n_{xy}` in plane shear force
+            * 'mx' : :math:`m_x` bending moment
+            * 'my' : :math:`m_y` bending moment
+            * 'mxy' : :math:`m_{xy}` twisting moment
+            * 'vx' or 'vxz' : :math:`v_x` shear force
+            * 'vy' or 'vyz' : :math:`v_y` shear force
 
             Default is 'nx'.
-
-        smoothen : int, Optional
+        smoothen: int, Optional
             If the values should be smoothened or not. Default is False.
-
-        **mpl_kw : dict, Optional
-            Parameters to pass to :func:`dewloosh.mpl.triplot`
-
+        **mpl_kw: dict, Optional
+            Parameters to pass to :func:`sigmaepsilon.plotting.mpl.triplot`
         """
         assert not smoothen, "Smoothing is not available at the moment."
         axm = self.model
@@ -333,67 +396,69 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         coords, topo = self.detach_mesh(triangulate=False)
         topo, forces = triang(topo, data=forces)  # triangulate with data
         triobj = tri.Triangulation(coords[:, 0], coords[:, 1], triangles=topo)
+
         if mpl_kw is None:
-            mpl_kw = dict(nlevels=15, cmap='jet', axis='on',
-                          offset=0., cbpad='10%', cbsize='10%',
-                          cbpos='right')
+            mpl_kw = dict(
+                nlevels=15,
+                cmap="jet",
+                axis="on",
+                offset=0.0,
+                cbpad="10%",
+                cbsize="10%",
+                cbpos="right",
+            )
         i = fcomp2int(component)
-        #min, max = minmax(forces[:, :3, i])
         compstr = component.upper()
         params = [self.Index, compstr]
         tmpl = "Domain {} - {}"
-        mpl_kw['title'] = tmpl.format(*params)
+        mpl_kw["title"] = tmpl.format(*params)
+
         triplot(triobj, data=forces[:, :3, i], **mpl_kw)
 
-    def plot_stresses(self, *args, component: str = None, mpl_kw: dict = None,
-                      source: str = None, z: str = None, **kwargs):
+    def plot_stresses(
+        self,
+        *args,
+        component: str = None,
+        mpl_kw: dict = None,
+        source: str = None,
+        z: str = None,
+        **kwargs,
+    ):
         """
         Plots internal forces of a domain using `matplotlib`.
 
         Parameters
         ----------
-        component : str, Optional
+        component: str, Optional
             Possible options are:
 
-                'sxx' : :math:`\\sigma_{x}` stress
-
-                'syy' : :math:`\\sigma_{y}` stress
-
-                'sxy' : :math:`\\tau_{xy}` stress
-
-                'sxz' : :math:`\\tau_{xz}` stress
-
-                'syz' : :math:`\\tau_{yz}` stress
-
-                'svm' : :math:`\\sigma_{VM}` Von-Mises stress
-
-                's1' : :math:`\\sigma_{1}` 1st principal stress
-
-                's2' : :math:`\\sigma_{2}` 2nd principal stress
-
-                'as' : :math:`\\alpha` principal direction angle
+            * 'sxx' : :math:`\\sigma_{x}` stress
+            * 'syy' : :math:`\\sigma_{y}` stress
+            * 'sxy' : :math:`\\tau_{xy}` stress
+            * 'sxz' : :math:`\\tau_{xz}` stress
+            * 'syz' : :math:`\\tau_{yz}` stress
+            * 'svm' : :math:`\\sigma_{VM}` Von-Mises stress
+            * 's1' : :math:`\\sigma_{1}` 1st principal stress
+            * 's2' : :math:`\\sigma_{2}` 2nd principal stress
+            * 'as' : :math:`\\alpha` principal direction angle
 
             Default is 'sxx_m_t' for XLAM domains 'sxx' otherwise.
-
-        source : str, Optional
-            Specifies the source of the possibe agents. Possible values are 
-            'm' for bending and 'n' for normal action. Only for XLAM domains. 
+        source: str, Optional
+            Specifies the source of the possibe agents. Possible values are
+            'm' for bending and 'n' for normal action. Only for XLAM domains.
             Default is None.
-
-        z : str, Optional
-            Specifies the location along the thickness. Possible values are 
+        z: str, Optional
+            Specifies the location along the thickness. Possible values are
             't' for top, 'b' for bottom, 'm' for middle and 'max' for the location
-            where the value takes its maximum (only for shear stresses). 
+            where the value takes its maximum (only for shear stresses).
             Default is None.
+        **mpl_kw: dict, Optional
+            Parameters to pass to :func:`sigmaepsilon.plotting.mpl.triplot`
 
-        **mpl_kw : dict, Optional
-            Parameters to pass to :func:`dewloosh.mpl.triplot`
-            
         Import the necessary stuff,
 
         Examples
         --------
-        
         >>> from axisvm.com.client import start_AxisVM
         >>> from axisvm import examples
         >>> import matplotlib.pyplot as plt
@@ -418,7 +483,6 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         Finally, close the application.
 
         >>> axvm.Quit()
-            
         """
         smoothen: bool = False
         assert not smoothen, "Smoothing is not available at the moment."
@@ -427,229 +491,295 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         topo, stresses = triang(topo, data=stresses)  # triangulate with data
         triobj = tri.Triangulation(coords[:, 0], coords[:, 1], triangles=topo)
         if mpl_kw is None:
-            mpl_kw = dict(nlevels=15, cmap='jet', axis='on',
-                          offset=0., cbpad='10%', cbsize='10%',
-                          cbpos='right')
+            mpl_kw = dict(
+                nlevels=15,
+                cmap="jet",
+                axis="on",
+                offset=0.0,
+                cbpad="10%",
+                cbsize="10%",
+                cbpos="right",
+            )
         if self.IsXLAM:
             if component is not None and source is not None:
-                component += '_' + '{}'.format(source)
+                component += "_" + "{}".format(source)
             if component is not None and z is not None:
-                component += '_' + '{}'.format(z)
-            c = component.lower() if component is not None else 'sxx_m_t'
+                component += "_" + "{}".format(z)
+            c = component.lower() if component is not None else "sxx_m_t"
             ci = xlmscomp2int(c)
         else:
-            c = component if component is not None else 'sxx'
+            c = component if component is not None else "sxx"
             ci = scomp2int(c)
         compstr = component.upper()
         params = [self.Index, compstr, z.lower()]
         tmpl = "Domain {} - {} - {}"
-        mpl_kw['title'] = tmpl.format(*params)
+        mpl_kw["title"] = tmpl.format(*params)
         triplot(triobj, data=stresses[:, :3, ci], **mpl_kw)
 
-    def surface_stresses(self, case=None, combination=None, z='m',
-                         LoadCaseId=None, LoadCombinationId=None,
-                         DisplacementSystem=0, LoadLevelOrModeShapeOrTimeStep=1):
+    def surface_stresses(
+        self,
+        case: Union[str, int] = None,
+        combination: Union[str, int] = None,
+        z: str = "m",
+        load_case_id: int = None,
+        load_combination_id: int = None,
+        displacement_system: int = 0,
+        load_level: int = None,
+        mode_shape: int = None,
+        time_step: int = None,
+    ) -> ak.Array:
         if self.IsXLAM:
-            return self.xlam_surface_stresses(case=case, combination=combination,
-                                              LoadCaseId=LoadCaseId,
-                                              LoadCombinationId=LoadCombinationId,
-                                              DisplacementSystem=DisplacementSystem,
-                                              LoadLevelOrModeShapeOrTimeStep=LoadLevelOrModeShapeOrTimeStep)
+            return self.xlam_surface_stresses(
+                case=case,
+                combination=combination,
+                load_case_id=load_case_id,
+                load_combination_id=load_combination_id,
+                displacement_system=displacement_system,
+                load_level=load_level,
+                mode_shape=mode_shape,
+                time_step=time_step,
+            )
         axm = self.model
-        stresses = axm.Results.Stresses
+        stresses: AxisVMResultItem = axm.Results.Stresses
         sids = self.MeshSurfaceIds
 
-        LoadCaseId, LoadCombinationId = \
-            stresses._get_case_or_component(case=case, combination=combination,
-                                            LoadCaseId=LoadCaseId,
-                                            LoadCombinationId=LoadCombinationId)
+        load_case_id, load_combination_id = stresses._get_case_or_component(
+            case=case,
+            combination=combination,
+            load_case_id=load_case_id,
+            load_combination_id=load_combination_id,
+        )
 
         config = dict(
-            LoadCaseId=LoadCaseId,
-            LoadCombinationId=LoadCombinationId,
-            LoadLevelOrModeShapeOrTimeStep=LoadLevelOrModeShapeOrTimeStep,
-            DisplacementSystem=DisplacementSystem
+            load_case_id=load_case_id,
+            load_combination_id=load_combination_id,
+            load_level=load_level,
+            mode_shape=mode_shape,
+            time_step=time_step,
+            displacement_system=displacement_system,
         )
         stresses.config(**config)
 
-        if LoadCaseId is not None:
-            def getter(i): return stresses.SurfaceStressesByLoadCaseId(i)[0]
-        elif LoadCombinationId is not None:
-            def getter(
-                i): return stresses.SurfaceStressesByLoadCombinationId(i)[0]
+        if load_case_id is not None:
+
+            def getter(i):
+                return stresses.SurfaceStressesByLoadCaseId(i)[0]
+
+        elif load_combination_id is not None:
+
+            def getter(i):
+                return stresses.SurfaceStressesByLoadCombinationId(i)[0]
+
         foo = partial(RSurfaceStresses2list, mode=z)
         return ak.Array(list(map(foo, map(getter, sids))))
 
-    def xlam_surface_stresses(self, case=None, combination=None,
-                              LoadCaseId=None, LoadCombinationId=None,
-                              DisplacementSystem=0, LoadLevelOrModeShapeOrTimeStep=1,
-                              AnalysisType=0, frmt='array', factor=None):
+    def xlam_surface_stresses(
+        self,
+        case: Union[str, int] = None,
+        combination: Union[str, int] = None,
+        load_case_id: int = None,
+        load_combination_id: int = None,
+        load_level: int = None,
+        mode_shape: int = None,
+        time_step: int = None,
+        displacement_system: Union[str, int] = 0,
+        analysis_type: int = 0,
+        frmt="array",
+        factor=None,
+    ) -> Union[ak.Array, dict]:
         """
         Returns XLAM stresses either as a :class:`numpy.ndarray` or as a dictionary.
-        
+
         Parameters
         ----------
-        DisplacementSystem : int, Optional
-            0 for local, 1 for global. Default is 1.
-        
-        LoadCaseId : int, Optional
+        displacement_system: int, Optional
+            0 or 'local' for local, 1 or 'global' for global. Default is 1.
+        load_case_id: int, Optional
             Default is None.
-            
-        LoadLevelOrModeShapeOrTimeStep : int, Optional
+        load_level: int, Optional
             Default is None.
-            
-        LoadCombinationId : int, Optional
+        mode_shape: int, Optional
             Default is None.
-            
-        case : Union[str, Iterable], Optional
-            The name of a loadcase or an iterable of indices. 
+        time_step: int, Optional
             Default is None.
-        
-        combination : str, Optional
+        load_combination_id: int, Optional
+            Default is None.
+        case: Union[str, Iterable], Optional
+            The name of a loadcase or an iterable of indices.
+            Default is None.
+        combination: str, Optional
             The name of a load combination. Default is None.
-            
-        AnalysisType : int, Optional
+        analysis_type: int, Optional
             Default is 0.
-            
-        frmt : str, Optional
+        frmt: str, Optional
             Controls the type of the result. With 'array' it is a
-            3d NumPy array, otherwise a dictionary. Default is 'array'.
-        
-        factor : Iterable, Optional
+            3d Awkward array, otherwise a dictionary. Default is 'array'.
+        factor: Iterable, Optional
             Linear coefficients for the different load cases specified with 'case'.
             If 'case' is an Iterable, 'factor' must be an Iterable of the same shape.
             Default is None.
-            
+
         Notes
         -----
         1) It is the user who has to make sure that this call is only called on surfaces,
         that belong to an XLAM domain.
         2) The returned stresses do not belong to the same position.
-        
+
         Returns
         -------
-        :class:`numpy.ndarray` or dict
-            If frmt is 'array', the result is a 2d float NumPy array of shape (nN, nX),
+        awkward.Array or dict
+            If frmt is 'array', the result is a 2d float Awkward array of shape (nN, nX),
             where nN is the number of nodes of the surface and nX is the number of stress
             components, which are:
-            
-                0 : :math:`\\sigma_{x}` stress at the top, from bending
-                
-                1 : :math:`\\sigma_{y}` stress at the top, from bending
-                
-                2 : :math:`\\tau_{xy}` stress at the top, from bending
-                
-                3 : :math:`\\sigma_{x}` stress at the bottom, from bending
-                
-                4 : :math:`\\sigma_{y}` stress at the bottom, from bending
-                
-                5 : :math:`\\tau_{xy}` stress at the bottom, from bending
-                
-                6 : max :math:`\\sigma_{x}` stress from stretching
-                
-                7 : max :math:`\\sigma_{y}` stress from stretching
-                
-                8 : max :math:`\\tau_{xy}` stress from stretching
-                
-                9 : max :math:`\\tau_{xz}` shear stress 
-                
-                10 : max :math:`\\tau_{yz}` shear stress
-                
-                11 : max :math:`\\tau_{xz,r}` rolling shear stress 
-                
-                12 : max :math:`\\tau_{yz,r}` rolling shear stress 
-            
+
+            * 0 : :math:`\\sigma_{x}` stress at the top, from bending
+            * 1 : :math:`\\sigma_{y}` stress at the top, from bending
+            * 2 : :math:`\\tau_{xy}` stress at the top, from bending
+            * 3 : :math:`\\sigma_{x}` stress at the bottom, from bending
+            * 4 : :math:`\\sigma_{y}` stress at the bottom, from bending
+            * 5 : :math:`\\tau_{xy}` stress at the bottom, from bending
+            * 6 : max :math:`\\sigma_{x}` stress from stretching
+            * 7 : max :math:`\\sigma_{y}` stress from stretching
+            * 8 : max :math:`\\tau_{xy}` stress from stretching
+            * 9 : max :math:`\\tau_{xz}` shear stress
+            * 10 : max :math:`\\tau_{yz}` shear stress
+            * 11 : max :math:`\\tau_{xz,r}` rolling shear stress
+            * 12 : max :math:`\\tau_{yz,r}` rolling shear stress
+
             If frmt is 'dict', the stresses are returned as a dictionary of 1d NumPy arrays,
             where indices from 0 to 12 are the keys of the values at the corders.
-        
         """
         assert self.IsXLAM, "This is not an XLAM domain!"
 
-        def ak2np(r, i): return ak.flatten(r[:, :, i]).to_numpy()
-        def ad2d(arr): return {i: ak2np(arr, i) for i in range(13)}
+        def ak2np(r, i):
+            return ak.flatten(r[:, :, i]).to_numpy()
+
+        def ad2d(arr):
+            return {i: ak2np(arr, i) for i in range(13)}
 
         if issequence(case):
             if factor is not None:
-                assert issequence(factor), \
-                    "If 'case' is an Iterable, 'factor' must be an Iterable of the same shape."
-                assert len(case) == len(factor), \
-                    "Lists 'case' and 'factor' must have equal lengths."
-                res = sum([self.xlam_surface_stresses(
-                    case=c,
-                    frmt='array',
-                    factor=f,
-                    AnalysisType=AnalysisType,
-                    LoadLevelOrModeShapeOrTimeStep=LoadLevelOrModeShapeOrTimeStep,
-                    DisplacementSystem=DisplacementSystem
-                ) for c, f in zip(case, factor)])
+                assert issequence(
+                    factor
+                ), "If 'case' is an Iterable, 'factor' must be an Iterable of the same shape."
+                assert len(case) == len(
+                    factor
+                ), "Lists 'case' and 'factor' must have equal lengths."
+                res = sum(
+                    [
+                        self.xlam_surface_stresses(
+                            case=c,
+                            frmt="array",
+                            factor=f,
+                            analysis_type=analysis_type,
+                            load_level=load_level,
+                            mode_shape=mode_shape,
+                            time_step=time_step,
+                            displacement_system=displacement_system,
+                        )
+                        for c, f in zip(case, factor)
+                    ]
+                )
             else:
-                res = [self.xlam_surface_stresses(
-                    case=c,
-                    frmt=frmt,
-                    factor=1.0,
-                    AnalysisType=AnalysisType,
-                    LoadLevelOrModeShapeOrTimeStep=LoadLevelOrModeShapeOrTimeStep,
-                    DisplacementSystem=DisplacementSystem
-                ) for c in case]
-            if frmt == 'dict':
+                res = [
+                    self.xlam_surface_stresses(
+                        case=c,
+                        frmt=frmt,
+                        factor=1.0,
+                        analysis_type=analysis_type,
+                        load_level=load_level,
+                        mode_shape=mode_shape,
+                        time_step=time_step,
+                        displacement_system=displacement_system,
+                    )
+                    for c in case
+                ]
+            if frmt == "dict":
                 return ad2d(res)
             return res
 
-        axm = self.model
-        stresses = axm.Results.Stresses
+        axm: AxWrapper = self.model
+        stresses: IAxisVMStresses = axm.Results.Stresses
         sids = self.MeshSurfaceIds
 
-        LoadCaseId, LoadCombinationId = \
-            stresses._get_case_or_component(case=case, combination=combination,
-                                            LoadCaseId=LoadCaseId,
-                                            LoadCombinationId=LoadCombinationId)
+        load_case_id, load_combination_id = stresses._get_case_or_component(
+            case=case,
+            combination=combination,
+            load_case_id=load_case_id,
+            load_combination_id=load_combination_id,
+        )
 
         config = dict(
-            LoadCaseId=LoadCaseId,
-            LoadCombinationId=LoadCombinationId,
-            LoadLevelOrModeShapeOrTimeStep=LoadLevelOrModeShapeOrTimeStep,
-            DisplacementSystem=DisplacementSystem
+            load_case_id=load_case_id,
+            load_combination_id=load_combination_id,
+            load_level=load_level,
+            mode_shape=mode_shape,
+            time_step=time_step,
+            displacement_system=displacement_system,
         )
         stresses.config(**config)
 
-        if LoadCaseId is not None:
-            getter = partial(get_xlam_strs_case, stresses, LoadCaseId,
-                             LoadLevelOrModeShapeOrTimeStep, AnalysisType)
-        elif LoadCombinationId is not None:
-            getter = partial(get_xlam_strs_comb, stresses, LoadCombinationId,
-                             LoadLevelOrModeShapeOrTimeStep, AnalysisType)
+        LoadLevelOrModeShapeOrTimeStep = _LoadLevelOrModeShapeOrTimeStep(
+            load_level=load_level,
+            mode_shape=mode_shape,
+            time_step=time_step,
+        )
+
+        if load_case_id is not None:
+            getter = partial(
+                get_xlam_strs_case,
+                stresses,
+                load_case_id,
+                LoadLevelOrModeShapeOrTimeStep,
+                analysis_type,
+            )
+        elif load_combination_id is not None:
+            getter = partial(
+                get_xlam_strs_comb,
+                stresses,
+                load_combination_id,
+                LoadLevelOrModeShapeOrTimeStep,
+                analysis_type,
+            )
         foo = partial(RXLAMSurfaceStresses2list)
         factor = 1.0 if factor is None else float(factor)
         res = factor * ak.Array(list(map(foo, map(getter, sids))))
-        if frmt == 'dict':
+        if frmt == "dict":
             return ad2d(res)
         return res
 
-    def critical_xlam_surface_efficiencies(self, *args, CombinationType=None,
-                                           AnalysisType=None, Component=None,
-                                           MinMaxType=None, **kwargs):
+    def critical_xlam_surface_efficiencies(
+        self,
+        *,
+        combination_type=None,
+        analysis_type=None,
+        component=None,
+        minmax_type=None,
+        **__,
+    ):
         axm = self.model
         stresses = axm.Results.Stresses
 
         def inner(sid):
             params = dict(
-                SurfaceId=sid, MinMaxType=MinMaxType,
-                CombinationType=CombinationType,
-                AnalysisType=AnalysisType, Component=Component,
+                SurfaceId=sid,
+                MinMaxType=minmax_type,
+                CombinationType=combination_type,
+                AnalysisType=analysis_type,
+                Component=component,
             )
             rec = get_xlam_effs_crit(stresses, **params)
             return np.array(RXLAMSurfaceEfficiencies2list(rec))
 
         return ak.Array(list(map(inner, self.MeshSurfaceIds)))
 
-    def critical_xlam_data(self, *args, CombinationType=None,
-                           AnalysisType=0, **kwargs):
+    def critical_xlam_data(self, *, combination_type=None, analysis_type=0, **__):
         Surfaces = self.model.Surfaces
         dparams = dict(
-            MinMaxType=1,
-            CombinationType=CombinationType,
-            AnalysisType=AnalysisType,
-            Component=4  # xse_Max
+            minmax_type=1,
+            combination_type=combination_type,
+            analysis_type=analysis_type,
+            component=4,  # xse_Max
         )
 
         sid, nid, f, lc = (None,) * 4
@@ -659,24 +789,24 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         imax = np.argmax(eff_max)
         csum = np.cumsum(cuts)
         iS = np.where(csum > imax)[0][0]
-        iN = imax - csum[iS-1]
+        iN = imax - csum[iS - 1]
         sid = self.MeshSurfaceIds[iS]
         nid = self.topology()[iS, iN]
 
         if cuts[iS] == 6:
-            SurfaceVertexType = 0 if iN < 3 else 1
+            surface_vertex_type = 0 if iN < 3 else 1
         elif cuts[iS] == 8:
-            SurfaceVertexType = 0 if iN < 4 else 1
+            surface_vertex_type = 0 if iN < 4 else 1
         else:
             raise NotImplementedError
 
         sparams = dict(
-            SurfaceVertexType=SurfaceVertexType,
-            SurfaceVertexId=nid,
-            MinMaxType=1,
-            CombinationType=CombinationType,
-            AnalysisType=AnalysisType,
-            Component=4
+            surface_vertex_type=surface_vertex_type,
+            surface_vertex_id=nid,
+            minmax_type=1,
+            combination_type=combination_type,
+            analysis_type=analysis_type,
+            component=4,
         )
         _, f, lc = Surfaces[sid].critical_xlam_efficiency(**sparams)
         return f, lc, (sid, nid)
@@ -704,11 +834,11 @@ class IAxisVMDomains(AxisVMModelItems, SurfaceMixin):
         return super().__getitem__(*args)
 
     @property
-    def tr(self) -> Array:
+    def tr(self) -> ndarray:
         return self.transformation_matrices()
 
     @property
-    def frames(self) -> Array:
+    def frames(self) -> ndarray:
         return self.transformation_matrices()
 
     @property
@@ -720,18 +850,18 @@ class IAxisVMDomains(AxisVMModelItems, SurfaceMixin):
         return self.get_domain_attributes()
 
     @property
-    def XLAMItems(self):
+    def XLAMItems(self) -> Iterator[IAxisVMDomain]:
         return filter(lambda i: self.IsXLAM[i.Index], self[:])
 
     @property
-    def XLAMCount(self):
+    def XLAMCount(self) -> int:
         return len(self.XLAMItems)
 
-    def topology(self, *args,  i=None) -> TopologyArray:
+    def topology(self, *args, i=None) -> TopologyArray:
         i = i if len(args) == 0 else args[0]
         if isinstance(i, int):
             return self[i].topology()
-        if isinstance(i, np.ndarray):
+        if isinstance(i, ndarray):
             ids = i
         else:
             if isinstance(i, Iterable):
@@ -744,7 +874,7 @@ class IAxisVMDomains(AxisVMModelItems, SurfaceMixin):
         i = i if len(args) == 0 else args[0]
         if isinstance(i, int):
             return self.BulkGetDomains([i])
-        if isinstance(i, np.ndarray):
+        if isinstance(i, ndarray):
             ids = i
         else:
             if isinstance(i, Iterable):
@@ -753,10 +883,11 @@ class IAxisVMDomains(AxisVMModelItems, SurfaceMixin):
                 ids = np.array(list(range(self.Count))) + 1
         return self.BulkGetDomains(ids)
 
-    def get_domain_attributes(self, *args, i=None, raw=False, fields=None,
-                              rec=None, **kwargs) -> AxisVMAttributes:
+    def get_domain_attributes(
+        self, *args, i=None, raw=False, fields=None, rec=None, **kwargs
+    ) -> AxisVMAttributes:
         if fields is None:
-            fields = surface_attr_fields + ['LineIdCounts', 'BulkLineIds']
+            fields = surface_attr_fields + ["LineIdCounts", "BulkLineIds"]
         elif isinstance(fields, str):
             fields = [fields]
         elif isinstance(fields, Iterable):
@@ -768,12 +899,13 @@ class IAxisVMDomains(AxisVMModelItems, SurfaceMixin):
             return rec
         else:
             LineIdCounts, BulkLineIds, SurfaceAttrs, *_ = rec
-            data = get_surface_attributes(self, *args, i=i, attr=SurfaceAttrs,
-                                          fields=fields, raw=False, **kwargs)
-            if 'LineIdCounts' in fields:
-                data['LineIdCounts'] = LineIdCounts
-            if 'BulkLineIds' in fields:
-                data['BulkLineIds'] = BulkLineIds
+            data = get_surface_attributes(
+                self, *args, i=i, attr=SurfaceAttrs, fields=fields, raw=False, **kwargs
+            )
+            if "LineIdCounts" in fields:
+                data["LineIdCounts"] = LineIdCounts
+            if "BulkLineIds" in fields:
+                data["BulkLineIds"] = BulkLineIds
             return AxisVMAttributes(data)
 
     def get_attributes(self, *args, **kwargs) -> AxisVMAttributes:

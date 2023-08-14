@@ -27,9 +27,9 @@ def _check_examples_path():
     """Check if the examples path exists."""
     if not axisvm.EXAMPLES_PATH:
         raise FileNotFoundError(
-            'EXAMPLES_PATH does not exist.  Try setting the '
-            'environment variable `AXISVM_USERDATA_PATH` '
-            'to a writable path and restarting python'
+            "EXAMPLES_PATH does not exist.  Try setting the "
+            "environment variable `AXISVM_USERDATA_PATH` "
+            "to a writable path and restarting python"
         )
 
 
@@ -58,13 +58,13 @@ def delete_downloads():
 
 def _decompress(filename):
     _check_examples_path()
-    zip_ref = zipfile.ZipFile(filename, 'r')
+    zip_ref = zipfile.ZipFile(filename, "r")
     zip_ref.extractall(axisvm.EXAMPLES_PATH)
     return zip_ref.close()
 
 
 def _get_vtk_file_url(filename):
-    return f'https://github.com/AxisVM/axisvm-data/raw/main/{filename}'
+    return f"https://github.com/AxisVM/axisvm-data/raw/main/{filename}"
 
 
 def _http_request(url):
@@ -72,7 +72,7 @@ def _http_request(url):
 
 
 def _repo_file_request(repo_path, filename):
-    return os.path.join(repo_path, 'Data', filename), None
+    return os.path.join(repo_path, "Data", filename), None
 
 
 def _retrieve_file(retriever, filename):
@@ -91,7 +91,7 @@ def _retrieve_file(retriever, filename):
     _check_examples_path()
     # First check if file has already been downloaded
     local_path = os.path.join(axisvm.EXAMPLES_PATH, os.path.basename(filename))
-    local_path_no_zip = local_path.replace('.zip', '')
+    local_path_no_zip = local_path.replace(".zip", "")
     if os.path.isfile(local_path_no_zip) or os.path.isdir(local_path_no_zip):
         return local_path_no_zip, None
     if isinstance(retriever, str):
@@ -108,7 +108,7 @@ def _retrieve_file(retriever, filename):
             shutil.copytree(saved_file, local_path)
         else:
             shutil.copy(saved_file, local_path)
-    if pyvista.get_ext(local_path) in ['.zip']:
+    if pyvista.get_ext(local_path) in [".zip"]:
         _decompress(local_path)
         local_path = local_path[:-4]
     return local_path, resp
@@ -121,9 +121,9 @@ def _download_file(filename):
     else:
         if not os.path.isdir(axisvm.AXISVM_DATA_PATH):
             raise FileNotFoundError(
-                f'VTK data repository path does not exist at:\n\n{axisvm.AXISVM_DATA_PATH}'
+                f"VTK data repository path does not exist at:\n\n{axisvm.AXISVM_DATA_PATH}"
             )
-        if not os.path.isdir(os.path.join(axisvm.AXISVM_DATA_PATH, 'Data')):
+        if not os.path.isdir(os.path.join(axisvm.AXISVM_DATA_PATH, "Data")):
             raise FileNotFoundError(
                 f'VTK data repository does not have "Data" folder at:\n\n{axisvm.AXISVM_DATA_PATH}'
             )
@@ -134,6 +134,7 @@ def _download_file(filename):
 def _download_and_read(filename):
     saved_file, _ = _download_file(filename)
     return saved_file
+
 
 ###############################################################################
 
@@ -153,9 +154,9 @@ def download_tetrahedra():  # pragma: no cover
     >>> from axisvm import examples
     >>> axvm = start_AxisVM(visible=True, daemon=True)
     >>> axvm.model = examples.download_tetrahedra()
-    
+
     """
-    return _download_and_read('tetrahedra_vX5r4.axs')
+    return _download_and_read("tetrahedra_vX5r4.axs")
 
 
 def download_bernoulli_grid():  # pragma: no cover
@@ -166,6 +167,10 @@ def download_bernoulli_grid():  # pragma: no cover
     -------
     str
         A path to an AxisVM model file on your filesystem.
+        
+    Note
+    ----
+    You need AxisVM version X5r4 or later to open this file.
 
     Example
     --------
@@ -173,9 +178,9 @@ def download_bernoulli_grid():  # pragma: no cover
     >>> from axisvm import examples
     >>> axvm = start_AxisVM(visible=True, daemon=True)
     >>> axvm.model = examples.download_bernoulli_grid()
-    
+
     """
-    return _download_and_read('console_H8_L2_v13r3.axs')
+    return _download_and_read("console_H8_L2_vX5r4.axs")
 
 
 def download_stem_stl():  # pragma: no cover
@@ -191,9 +196,9 @@ def download_stem_stl():  # pragma: no cover
     --------
     >>> from axisvm import examples
     >>> examples.download_stem_stl()
-    
+
     """
-    return _download_and_read('stem.stl')
+    return _download_and_read("stem.stl")
 
 
 def download_stand_vtk():  # pragma: no cover
@@ -209,9 +214,9 @@ def download_stand_vtk():  # pragma: no cover
     --------
     >>> from axisvm import examples
     >>> examples.download_stand_vtk()
-    
+
     """
-    return _download_and_read('stand.vtk')
+    return _download_and_read("stand.vtk")
 
 
 def download_stand_stl():  # pragma: no cover
@@ -227,15 +232,15 @@ def download_stand_stl():  # pragma: no cover
     --------
     >>> from axisvm import examples
     >>> examples.download_stand_stl()
-    
+
     """
-    return _download_and_read('stand.stl')
+    return _download_and_read("stand.stl")
 
 
 def download_sample_001():  # pragma: no cover
     """
     Downloads an AxisVM model with a few beams, trusses and
-    domains. 
+    domains.
 
     Returns
     -------
@@ -248,15 +253,15 @@ def download_sample_001():  # pragma: no cover
     >>> from axisvm import examples
     >>> axvm = start_AxisVM(visible=True, daemon=True)
     >>> axvm.model = examples.download_sample_001()
-    
+
     """
-    return _download_and_read('sample_001.axs')
+    return _download_and_read("sample_001.axs")
 
 
 def download_plate_ss():  # pragma: no cover
     """
     Downloads an AxisVM model with a few beams, trusses and
-    domains. 
+    domains.
 
     Returns
     -------
@@ -269,6 +274,6 @@ def download_plate_ss():  # pragma: no cover
     >>> from axisvm import examples
     >>> axvm = start_AxisVM(visible=True, daemon=True)
     >>> axvm.model = examples.download_plate_ss()
-    
+
     """
-    return _download_and_read('ss_plate_vX5r4.axs')
+    return _download_and_read("ss_plate_vX5r4.axs")

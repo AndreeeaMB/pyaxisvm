@@ -1,13 +1,20 @@
 # -*- coding: utf-8 -*-
+from typing import Union, Iterable
+
 import numpy as np
+from numpy import ndarray
 import awkward as ak
 
-from polymesh import PointCloud, CartesianFrame
-from polymesh import TopologyArray
-from neumann.linalg.sparse.utils import count_cols
+from sigmaepsilon.mesh import PointCloud, CartesianFrame
+from sigmaepsilon.mesh import TopologyArray
+from sigmaepsilon.math.linalg.sparse.utils import count_cols
 
-from .core.wrap import AxWrapper, AxisVMModelItems
-from .core.utils import RDisplacementValues2list
+from .core.wrap import AxWrapper
+from .core.utils import (
+    RDisplacementValues2list,
+    _LoadLevelOrModeShapeOrTimeStep,
+    _DisplacementSystem,
+)
 
 from .axnode import IAxisVMNodes
 from .axdomain import IAxisVMDomains, AxDomainCollection
@@ -18,17 +25,29 @@ from .axwindow import IAxisVMWindows
 from .axresult import IAxisVMResults
 from .axmaterial import IAxisVMMaterials
 from .axcalculation import IAxisVMCalculation
+from .axloadcombinations import IAxisVMLoadCombinations
 
 
-__all__ = ['IAxisVMModels', 'IAxisVMModel']
+__all__ = ["IAxisVMModels", "IAxisVMModel"]
 
 
 class IAxisVMModel(AxWrapper):
     """Wrapper for the `IAxisVMModel` COM interface."""
 
-    def __init__(self, *args, parent=None, **kwargs):
+    def __init__(self, *args, app=None, parent=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.parent = parent
+        self._app = app
+
+    @property
+    def app(self) -> AxWrapper:
+        """Returns the application."""
+        if self._app is not None:
+            return self._app
+        elif self.parent is not None:
+            if self.parent._app is not None:
+                return self.parent._app
+        return None
 
     @property
     def Nodes(self) -> IAxisVMNodes:
@@ -80,17 +99,35 @@ class IAxisVMModel(AxWrapper):
         return IAxisVMMaterials(model=self, wrap=self._wrapped.Materials)
 
     @property
-    def MeshSurfaceIds(self) -> np.ndarray:
+    def LoadCombinations(self) -> IAxisVMLoadCombinations:
+        """Returns a pointer object to the `IAxisVMLoadCombinations` COM interface."""
+        return IAxisVMLoadCombinations(model=self, wrap=self._wrapped.LoadCombinations)
+
+    @property
+    def MeshSurfaceIds(self) -> ndarray:
         """Returns the indices of the surfaces of all domains in the model
-        as a :class:`numpy.ndarray`."""
+        as a NumPy array."""
         d = self.Domains
         dc = d.Count
-        def fnc(i): return d[i+1].MeshSurfaceIds
+
+        def fnc(i):
+            return d[i + 1].MeshSurfaceIds
+
         return np.vstack(list(map(fnc, range(dc)))).flatten().astype(np.int64)
 
-    def points(self, ids=None) -> PointCloud:
+    def points(self, ids: Union[int, Iterable] = None) -> PointCloud:
+        """
+        Returns the points of the model as an instance of :class:`sigmaepsilon.mesh.space.PointCloud`.
+
+        Parameters
+        ----------
+        ids: Union[int, Iterable], Optional
+            The indices of the nodes for which the coordinates should be returned.
+            If not spefified, coordinates for all the points in the model are returned.
+            Default is None.
+        """
         frame = CartesianFrame(dim=3)
-        if isinstance(ids, np.ndarray):
+        if isinstance(ids, ndarray):
             ids = ids.astype(np.int32)
         elif isinstance(ids, int):
             ids = [ids]
@@ -103,10 +140,18 @@ class IAxisVMModel(AxWrapper):
             coords = self.Nodes.BulkGetCoord(ids)[0]
             coords = np.array([[n.x, n.y, n.z] for n in coords])
             if lc > 0 and mpc > 0:
-                def fnc(i): return lines.GetMidpoint(i+1)[0]
-                def xyz(n): return [n.x, n.y, n.z]
+
+                def fnc(i):
+                    return lines.GetMidpoint(i + 1)[0]
+
+                def xyz(n):
+                    return [n.x, n.y, n.z]
+
                 coords_mid = np.array(list(map(xyz, map(fnc, range(lc)))))
-                def fnc(i): return lines.MidpointId[i+1]
+
+                def fnc(i):
+                    return lines.MidpointId[i + 1]
+
                 mIDs = np.array(list(map(fnc, range(lc))))
                 i = np.where(mIDs > 0)[0]
                 mIDs = mIDs[i]
@@ -115,23 +160,26 @@ class IAxisVMModel(AxWrapper):
                 ids = np.concatenate([ids, mIDs])
         return PointCloud(coords, inds=ids, frame=frame)
 
-    def coordinates(self, ids=None) -> np.ndarray:
+    def coordinates(self, ids: Iterable = None) -> ndarray:
         """
-        Returns the coordinates of the points in the model as a :class:`numpy.ndarray`. 
-        
+        Returns the coordinates of the points in the model as a NumPy array.
+
         Parameters
         ----------
-        ids : int or :class:`numpy.ndarray`, Optional
+        ids: Union[int, Iterable], Optional
             Indices of points, whose coordinates are to be returned. If there are no
             indices specified, coordinates for all points are returned. Default is None.
-            
+
         Returns
         -------
-        :class:`polymesh.PointCloud`
+        numpy.ndarray
         """
         return self.points(ids).show()
 
     def topology(self) -> TopologyArray:
+        """
+        Returns the topology of the model as an instance of :class:`sigmaepsilon.mesh.TopologyArray`.
+        """
         res = []
 
         if self.Members.Count > 0:
@@ -148,114 +196,128 @@ class IAxisVMModel(AxWrapper):
             return np.vstack(res)
         return res[0] if len(res) == 1 else None
 
-    def dof_solution(self, *args, DisplacementSystem=1, LoadCaseId=None,
-                     LoadLevelOrModeShapeOrTimeStep=None, LoadCombinationId=None,
-                     case=None, combination=None, **kwargs) -> np.ndarray:
+    def dof_solution(
+        self,
+        *,
+        displacement_system: Union[str, int] = 1,
+        load_case_id: int = None,
+        load_level: int = None,
+        mode_shape: int = None,
+        time_step: int = None,
+        load_combination_id: int = None,
+        case: str = None,
+        combination: str = None,
+        **__,
+    ) -> ndarray:
         """
-        Returns degree of freedom solution for the whole model as a :class:`numpy.ndarray`.
-        
+        Returns degree of freedom solution for the whole model as a NumPy array.
+
         Parameters
         ----------
-        DisplacementSystem : int, Optional
+        displacement_system: Union[str, int], Optional
             0 for local, 1 for global. Default is 1.
-        
-        LoadCaseId : int, Optional
+        load_case_id: int, Optional
             Default is None.
-            
-        LoadLevelOrModeShapeOrTimeStep : int, Optional
+        load_level: int, Optional
             Default is None.
-            
-        LoadCombinationId : int, Optional
+        mode_shape: int, Optional
             Default is None.
-            
-        case : str, Optional
+        time_step: int, Optional
+            Default is None.
+        load_combination_id: int, Optional
+            Default is None.
+        case: str, Optional
             The name of a loadcase. Default is None.
-        
-        combination : str, Optional
+        combination: str, Optional
             The name of a load combination. Default is None.
-        
+
         Returns
         -------
-        :class:`numpy.ndarray`
-        
+        numpy.ndarray
         """
         if case is not None:
-            LoadCombinationId = None
+            load_combination_id = None
             if isinstance(case, str):
                 LoadCases = self.LoadCases
-                imap = {LoadCases.Name[i]: i for i in range(
-                    1, LoadCases.Count+1)}
+                imap = {LoadCases.Name[i]: i for i in range(1, LoadCases.Count + 1)}
                 if case in imap:
-                    LoadCaseId = imap[case]
+                    load_case_id = imap[case]
                 else:
                     raise KeyError("Unknown case with name '{}'".format(case))
             elif isinstance(case, int):
-                LoadCaseId = case
+                load_case_id = case
         elif combination is not None:
-            LoadCaseId = None
+            load_case_id = None
             if isinstance(combination, str):
                 LoadCombinations = self.LoadCombinations
-                imap = {LoadCombinations.Name[i]: i for i in range(
-                    1, LoadCombinations.Count+1)}
+                imap = {
+                    LoadCombinations.Name[i]: i
+                    for i in range(1, LoadCombinations.Count + 1)
+                }
                 if combination in imap:
-                    LoadCombinationId = imap[combination]
+                    load_combination_id = imap[combination]
                 else:
                     raise KeyError(
-                        "Unknown combination with name '{}'".format(combination))
+                        "Unknown combination with name '{}'".format(combination)
+                    )
             elif isinstance(combination, int):
-                LoadCombinationId = combination
+                load_combination_id = combination
+
         disps = self.Results.Displacements
-        if DisplacementSystem is None:
-            DisplacementSystem = 1  # global
-        if isinstance(DisplacementSystem, int):
-            disps.DisplacementSystem = DisplacementSystem
-        if LoadCaseId is not None:
-            disps.LoadCaseId = LoadCaseId
-        if LoadCombinationId is not None:
-            disps.LoadCombinationId = LoadCombinationId
-        if LoadLevelOrModeShapeOrTimeStep is None:
-            LoadLevelOrModeShapeOrTimeStep = 1
-        disps.LoadLevelOrModeShapeOrTimeStep = LoadLevelOrModeShapeOrTimeStep
-        if LoadCaseId is not None:
+
+        disps.DisplacementSystem = _DisplacementSystem(displacement_system)
+
+        if load_case_id is not None:
+            disps.LoadCaseId = load_case_id
+
+        if load_combination_id is not None:
+            disps.load_combination_id = load_combination_id
+
+        disps.LoadLevelOrModeShapeOrTimeStep = _LoadLevelOrModeShapeOrTimeStep(
+            load_level=load_level, mode_shape=mode_shape, time_step=time_step, default=1
+        )
+
+        if load_case_id is not None:
             recs = disps.AllNodalDisplacementsByLoadCaseId()[0]
-        elif LoadCombinationId is not None:
+        elif load_combination_id is not None:
             recs = disps.AllNodalDisplacementsByLoadCombinationId()[0]
+
         return np.array(list(map(RDisplacementValues2list, recs)))
 
-    def generalized_surface_forces(self, *args, **kwargs):
+    def generalized_surface_forces(self, *args, **kwargs) -> ndarray:
         """Returns internal forces and moments for all surfaces in the model."""
         return self.Surfaces.generalized_surface_forces(*args, **kwargs)
 
-    def surface_stresses(self, *args, **kwargs):
+    def surface_stresses(self, *args, **kwargs) -> ndarray:
         """Returns stresses for all surfaces in the model."""
         return self.Surfaces.surface_stresses(*args, **kwargs)
 
-    def critical_xlam_data(self, *args, CombinationType=None,  AnalysisType=0, **kwargs):
+    def critical_xlam_data(
+        self, *, combination_type: int = None, analysis_type: int = 0, **__
+    ):
         """
         Returns critical XLAM data.
-        
+
         Parameters
         ----------
-        CombinationType : int, Optional
+        combination_type: int, Optional
             Default is None.
-        
-        AnalysisType : int, Optional
+        analysis_type: int, Optional
             Default is 0.
-                
         """
         Domains = self.Domains
         Surfaces = self.Surfaces
         dparams = dict(
             MinMaxType=1,
-            CombinationType=CombinationType,
-            AnalysisType=AnalysisType,
-            Component=4  # xse_Max
+            CombinationType=combination_type,
+            AnalysisType=analysis_type,
+            Component=4,  # xse_Max
         )
 
         def get_efficiencies(i):
             return Domains[i].critical_xlam_surface_efficiencies(**dparams)
-        
-        vmax = 0 
+
+        vmax = 0
         did, sid, nid, f, lc = (None,) * 5
         for d in Domains.XLAMItems:
             data = get_efficiencies(d.Index)
@@ -265,10 +327,10 @@ class IAxisVMModel(AxWrapper):
             _vmax = eff_max[imax]
             if _vmax > vmax:
                 vmax = _vmax
-                did = d.Index 
+                did = d.Index
                 csum = np.cumsum(cuts)
                 iS = np.where(csum > imax)[0][0]
-                iN = imax - csum[iS-1]
+                iN = imax - csum[iS - 1]
                 sid = d.MeshSurfaceIds[iS]
                 nid = d.topology()[iS, iN]
 
@@ -283,12 +345,12 @@ class IAxisVMModel(AxWrapper):
                     SurfaceVertexType=SurfaceVertexType,
                     SurfaceVertexId=nid,
                     MinMaxType=1,
-                    CombinationType=CombinationType,
-                    AnalysisType=AnalysisType,
-                    Component=4
+                    CombinationType=combination_type,
+                    AnalysisType=analysis_type,
+                    Component=4,
                 )
                 _, f, lc = Surfaces[sid].critical_xlam_efficiency(**sparams)
-                
+
         return f, lc, (did, sid, nid)
 
     def __enter__(self):
@@ -321,6 +383,11 @@ class IAxisVMModels(AxWrapper):
 
     __itemcls__ = IAxisVMModel
 
-    def __init__(self, *args, app=None, **kwargs):
+    def __init__(self, *args, app: AxWrapper = None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.app = app
+        self._app = app
+
+    @property
+    def app(self) -> AxWrapper:
+        """Returns the application."""
+        return self._app
