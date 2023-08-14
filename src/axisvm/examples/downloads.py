@@ -176,7 +176,7 @@ def download_bernoulli_grid():  # pragma: no cover
     >>> axvm.model = examples.download_bernoulli_grid()
 
     """
-    return _download_and_read("console_H8_L2_v13r3.axs")
+    return _download_and_read("console_H8_L2_X5r4.axs")
 
 
 def download_stem_stl():  # pragma: no cover
