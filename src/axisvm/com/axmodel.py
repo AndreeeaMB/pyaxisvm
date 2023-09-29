@@ -26,7 +26,7 @@ from .axresult import IAxisVMResults
 from .axmaterial import IAxisVMMaterials
 from .axcalculation import IAxisVMCalculation
 from .axloadcombinations import IAxisVMLoadCombinations
-
+from .axnodalsupports import IAxisVMNodalSupports
 
 __all__ = ["IAxisVMModels", "IAxisVMModel"]
 
@@ -103,6 +103,11 @@ class IAxisVMModel(AxWrapper):
         """Returns a pointer object to the `IAxisVMLoadCombinations` COM interface."""
         return IAxisVMLoadCombinations(model=self, wrap=self._wrapped.LoadCombinations)
 
+    @property
+    def NodalSupports(self) -> IAxisVMNodalSupports:
+        """Returns a pointer object to the `IAxisVMNodalSupports` COM interface."""
+        return IAxisVMNodalSupports(model=self, wrap=self._wrapped.NodalSupports)
+    
     @property
     def MeshSurfaceIds(self) -> ndarray:
         """Returns the indices of the surfaces of all domains in the model
