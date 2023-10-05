@@ -52,7 +52,7 @@ class IAxisVMMember(AxisVMModelItem):
         def foo(i):
             return [lines.Item[i].StartNode, lines.Item[i].EndNode]
 
-        return np.squeeze(np.array(list(map(foo, lIDs)), dtype=int))
+        return TopologyArray(np.squeeze(np.array(list(map(foo, lIDs)), dtype=int)))
 
     def get_line_id_and_line_section_id(
         self, analysis_type: int, member_section_id: int
@@ -188,21 +188,21 @@ class IAxisVMMembers(AxisVMModelItems):
         """
         members = self.wrapped
         conn: dict = self.get_connected_member_ids(*args, **kwargs)
-        
+
         result = {}
         for key, value in conn.items():
             if isinstance(value, tuple):
                 member_ids, relative_node_ids = value
             else:
                 member_ids, relative_node_ids = value, None
-                
+
             _members = [self[i] for i in member_ids]
-            
+
             if relative_node_ids is not None:
                 result[key] = _members, relative_node_ids
             else:
                 result[key] = members
-                
+
         return result
 
     def topology(self, *args, i: int = None) -> TopologyArray:

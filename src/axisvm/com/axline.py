@@ -5,7 +5,7 @@ import awkward as ak
 import numpy as np
 from numpy import ndarray as Array
 from sigmaepsilon.mesh import TopologyArray
-from sigmaepsilon.plotting.plotly import plot_lines_3d
+from sigmaepsilon.mesh.plotting import plot_lines_plotly
 
 import axisvm
 
@@ -351,4 +351,4 @@ class IAxisVMLines(AxisVMModelItems):
     def plot(self, *args, **kwargs):
         coords = self.model.coordinates()
         topo = self.topology().to_numpy() - 1
-        return plot_lines_3d(coords, topo, *args, **kwargs)
+        return plot_lines_plotly(coords, topo, *args, **kwargs)
