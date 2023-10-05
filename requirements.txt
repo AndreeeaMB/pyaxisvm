@@ -3,10 +3,7 @@ wheel>=0.38.0 # pinned by Snyk to avoid a vulnerability
 
 pywin32
 appdirs
-sigmaepsilon.mesh>=1.0.0
-sigmaepsilon.math>=1.0.0
-sigmaepsilon.plotting.mpl>=1.0.0
-sigmaepsilon.plotting.plotly>=1.0.0
+sigmaepsilon.mesh >= 2.0.0 < 3.0
 
 comtypes==1.1.11
 ipython
