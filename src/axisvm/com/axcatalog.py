@@ -9,3 +9,4 @@ class IAxisVMCatalog(AxWrapper):
     """
     Wrapper for the `IAxisVMCatalog` COM interface.
     """
+    ...

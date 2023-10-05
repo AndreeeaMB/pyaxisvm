@@ -52,7 +52,7 @@ class IAxisVMMember(AxisVMModelItem):
         def foo(i):
             return [lines.Item[i].StartNode, lines.Item[i].EndNode]
 
-        return np.squeeze(np.array(list(map(foo, lIDs)), dtype=int))
+        return TopologyArray(np.squeeze(np.array(list(map(foo, lIDs)), dtype=int)))
 
     def get_line_id_and_line_section_id(
         self, analysis_type: int, member_section_id: int
@@ -135,6 +135,7 @@ class IAxisVMMembers(AxisVMModelItems):
             Default is None.
         return_relative_indices: bool, Optional
             If `True` relative indices (0 for stargin node, 1 for ending node) are also returned.
+            Default is True.
 
         Returns
         -------
@@ -155,9 +156,9 @@ class IAxisVMMembers(AxisVMModelItems):
         for node_id in nodeIDs:
             member_ids, relative_node_ids = np.where(topo == node_id)
             if return_relative_indices:
-                result[node_id] = member_ids, relative_node_ids
+                result[node_id] = member_ids + 1, relative_node_ids
             else:
-                result[node_id] = member_ids
+                result[node_id] = member_ids + 1
 
         return result
 
@@ -171,7 +172,8 @@ class IAxisVMMembers(AxisVMModelItems):
         Returns the members connected by one or more nodes, and optionally
         the relative node indices of the connected members.
 
-        All the parameters are forwarded to :func:`get_connected_member_ids`
+        All the parameters are forwarded to :func:`get_connected_member_ids`, refer its
+        documentation for the possible arguments.
 
         Returns
         -------
@@ -185,18 +187,22 @@ class IAxisVMMembers(AxisVMModelItems):
         :func:`get_connected_member_ids`
         """
         members = self.wrapped
-        _result: dict = self.get_connected_member_ids(*args, **kwargs)
+        conn: dict = self.get_connected_member_ids(*args, **kwargs)
+
         result = {}
-        for key, value in _result.items():
+        for key, value in conn.items():
             if isinstance(value, tuple):
                 member_ids, relative_node_ids = value
             else:
                 member_ids, relative_node_ids = value, None
+
             _members = [self[i] for i in member_ids]
+
             if relative_node_ids is not None:
                 result[key] = _members, relative_node_ids
             else:
                 result[key] = members
+
         return result
 
     def topology(self, *args, i: int = None) -> TopologyArray:

@@ -16,7 +16,7 @@ from sigmaepsilon.mesh import PointCloud, CartesianFrame
 from sigmaepsilon.mesh import TopologyArray
 from sigmaepsilon.mesh.utils import decompose
 from sigmaepsilon.mesh.utils.topology import rewire
-from sigmaepsilon.plotting.mpl import triplot
+from sigmaepsilon.mesh.plotting import triplot_mpl_data, triplot_mpl_mesh
 
 import axisvm
 from .core.wrap import AxisVMModelItem, AxisVMModelItems, AxItemCollection, AxWrapper
@@ -253,7 +253,7 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         triobj = tri.Triangulation(coords[:, 0], coords[:, 1], triangles=topo)
         if mpl_kw is None:
             mpl_kw = dict(axis="on")
-        triplot(triobj, **mpl_kw)
+        triplot_mpl_mesh(triobj, **mpl_kw)
 
     def plot_dof_solution(
         self,
@@ -356,7 +356,7 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         tmpl = "Domain {} - {}"
         mpl_kw["title"] = tmpl.format(*params)
 
-        triplot(triobj, data=dofsol[:, component_index], **mpl_kw)
+        triplot_mpl_data(triobj, data=dofsol[:, component_index], **mpl_kw)
 
     def plot_forces(
         self,
@@ -413,7 +413,7 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         tmpl = "Domain {} - {}"
         mpl_kw["title"] = tmpl.format(*params)
 
-        triplot(triobj, data=forces[:, :3, i], **mpl_kw)
+        triplot_mpl_data(triobj, data=forces[:, :3, i], **mpl_kw)
 
     def plot_stresses(
         self,
@@ -514,7 +514,7 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         params = [self.Index, compstr, z.lower()]
         tmpl = "Domain {} - {} - {}"
         mpl_kw["title"] = tmpl.format(*params)
-        triplot(triobj, data=stresses[:, :3, ci], **mpl_kw)
+        triplot_mpl_data(triobj, data=stresses[:, :3, ci], **mpl_kw)
 
     def surface_stresses(
         self,

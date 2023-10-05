@@ -12,7 +12,7 @@ from sigmaepsilon.mesh.utils.topology import unique_topo_data
 from sigmaepsilon.mesh.utils.topology.tr import edges_Q4
 from sigmaepsilon.mesh.utils.tri import edges_tri
 from sigmaepsilon.mesh.utils.topology import detach as detach_mesh
-from sigmaepsilon.plotting.plotly import plot_triangles_3d
+from sigmaepsilon.mesh.plotting import triplot_plotly
 
 import axisvm
 from .core.wrap import AxisVMModelItem, AxisVMModelItems
@@ -154,7 +154,7 @@ class SurfaceMixin:
             coords = self.model.coordinates()
         if backend == "mpl":
             pass
-        return plot_triangles_3d(
+        return triplot_plotly(
             coords, triangles, data=scalars, plot_edges=plot_edges, edges=edges
         )
 
