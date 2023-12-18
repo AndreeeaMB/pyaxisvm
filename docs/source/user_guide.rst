@@ -5,7 +5,7 @@ useful background information and explanation. The goal of this part of the docu
 is to provide you with enough examples to get a hang of the library.
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
     
     notebooks/adding_cross_sections
     notebooks/concrete_beam_design

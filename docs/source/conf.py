@@ -115,11 +115,17 @@ intersphinx_mapping = {
     "pandas": (r"https://pandas.pydata.org/pandas-docs/stable/", None),
     "sigmaepsilon.core": (r"https://sigmaepsiloncore.readthedocs.io/en/latest/", None),
     "sigmaepsilon.math": (r"https://sigmaepsilonmath.readthedocs.io/en/latest/", None),
+    "sigmaepsilon.mesh": (r"https://sigmaepsilonmesh.readthedocs.io/en/latest/", None),
     "sigmaepsilon.deepdict": (
         r"https://sigmaepsilondeepdict.readthedocs.io/en/latest/",
         None,
     ),
 }
+
+# myst-parser config
+
+# to automaticall generate labels for headers in Markdown files
+myst_heading_anchors = 1
 
 # napoleon config ---------------------------------------------------------
 
@@ -172,9 +178,9 @@ html_theme_options = {
             "type": "fontawesome",
         },
         {
-            "name": "PyPi",
+            "name": "AxisVM",
             "url": f"https://axisvm.eu/",
-            "icon": "fas fa-box-open",
+            "icon": "fas fa-solid fa-house",
             "type": "fontawesome",
         },
     ],

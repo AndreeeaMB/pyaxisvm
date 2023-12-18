@@ -1,4 +1,4 @@
-.. image:: AxisVM_logo.bmp
+.. image:: _static/AxisVM_logo.bmp
 
 =====================================================
 **PyAxisVM** - The official Python package for AxisVM
@@ -13,9 +13,6 @@
    Gallery <examples_gallery>
    API Reference <api>
 
-.. image:: gt40.png
-    :align: center
-
 **Version**: |version|
 
 **Useful links**:
@@ -23,7 +20,7 @@
 :doc:`user_guide` |
 :doc:`examples_gallery` |
 :ref:`API Reference` |
-:ref:`tips_and_tricks` |
+:ref:`tips-and-tricks` |
 `Source Repository <https://github.com/AxisVM/pyaxisvm>`_
 
 The **PyAxisVM** project offers a high-level interface to **AxisVM**, 
@@ -82,7 +79,7 @@ Contents
         User Guide
         ^^^^^^^^^^
 
-        The getting started guide contains a basic introduction to the main concepts 
+        The user guide contains a basic introduction to the main concepts 
         through simple examples.
 
         +++
