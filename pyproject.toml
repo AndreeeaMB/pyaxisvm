@@ -33,7 +33,7 @@ keywords = [
     "engineering", "mechanics", "finite element method", "AxisVM", "civil engineering",
     "steel design", "concrete design", "timber design"
 ]
-requires-python = ">=3.7, <3.11"
+requires-python = ">=3.10, <3.12"
 dynamic = ["dependencies", "optional-dependencies"]
 
 [tool.setuptools.packages.find]
