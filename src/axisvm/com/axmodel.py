@@ -27,6 +27,7 @@ from .axmaterial import IAxisVMMaterials
 from .axcalculation import IAxisVMCalculation
 from .axloadcombinations import IAxisVMLoadCombinations
 from .axnodalsupports import IAxisVMNodalSupports
+from .axrcbeamdesign import IAxisVMRCBeamDesign
 
 __all__ = ["IAxisVMModels", "IAxisVMModel"]
 
@@ -107,6 +108,11 @@ class IAxisVMModel(AxWrapper):
     def NodalSupports(self) -> IAxisVMNodalSupports:
         """Returns a pointer object to the `IAxisVMNodalSupports` COM interface."""
         return IAxisVMNodalSupports(model=self, wrap=self._wrapped.NodalSupports)
+    
+    @property
+    def RCBeamDesign(self) -> IAxisVMRCBeamDesign:
+        """Returns a pointer object to the `IAxisVMRCBeamDesign` COM interface."""
+        return IAxisVMRCBeamDesign(wrap=self._wrapped.RCBeamDesign)
     
     @property
     def MeshSurfaceIds(self) -> ndarray:

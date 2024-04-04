@@ -1,16 +1,24 @@
+ipython
 myst_parser
+memory_profiler
 nbsphinx
 sphinx-gallery
 sphinx_copybutton
-sphinxcontrib-bibtex==1.0.0
+sphinxcontrib-bibtex
 nbsphinx-link
 sphinxcontrib-svg2pdfconverter
-sphinx-rtd-theme
+sphinx_design
+sphinx-inline-tabs
+pydata-sphinx-theme
 sphinx-plotly-directive
+
 networkx
 plotly
 nbformat
-furo
 pypdfium2
 matplotlib
-memory_profiler
+
+setuptools>=65.5.1 # not directly required, pinned by Snyk to avoid a vulnerability
+numpy>=1.22.2 # not directly required, pinned by Snyk to avoid a vulnerability
+pillow>=10.0.1 # not directly required, pinned by Snyk to avoid a vulnerability
+tornado>=6.3.3 # not directly required, pinned by Snyk to avoid a vulnerability

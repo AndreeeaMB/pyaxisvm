@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
-__version__ = "1.0.9"
-
 import os
 import appdirs
 import warnings
 from typing import Optional
+from importlib.metadata import metadata
+
+__pkg_metadata__ = metadata("axisvm")
+__version__ = __pkg_metadata__["version"]
+__description__ = __pkg_metadata__["summary"]
+del __pkg_metadata__
 
 # catch annoying numpy/vtk future warning:
 warnings.simplefilter(action="ignore", category=FutureWarning)

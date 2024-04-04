@@ -247,7 +247,7 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         Parameters
         ----------
         **mpl_kw: dict, Optional
-            Parameters to pass to :func:`sigmaepsilon.plotting.mpl.triplot`
+            Parameters to pass to :func:`~sigmaepsilon.mesh.plotting.mpl.triplot_mpl_mesh`
         """
         coords, topo, _ = self.detach_mesh(return_indices=True, triangulate=True)
         triobj = tri.Triangulation(coords[:, 0], coords[:, 1], triangles=topo)
@@ -283,7 +283,7 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
             Sets the displacement system in which results are to be returned. Possible values
             are 1 (or 'global) and 0 (or 'local'). Default is 1, which means the global system.
         **mpl_kw : dict, Optional
-            Parameters to pass to :func:`sigmaepsilon.plotting.mpl.triplot`
+            Parameters to pass to :func:`~sigmaepsilon.mesh.plotting.mpl.triplot_mpl_data`
         *args
             Forwarded to :function:`~axisvm.com.axmodel.IAxisVMModel.dof_solution`.
         **kwargs
@@ -387,7 +387,7 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
         smoothen: int, Optional
             If the values should be smoothened or not. Default is False.
         **mpl_kw: dict, Optional
-            Parameters to pass to :func:`sigmaepsilon.plotting.mpl.triplot`
+            Parameters to pass to :func:`~sigmaepsilon.mesh.plotting.mpl.triplot_mpl_data`
         """
         assert not smoothen, "Smoothing is not available at the moment."
         axm = self.model
@@ -453,7 +453,7 @@ class IAxisVMDomain(AxisVMModelItem, SurfaceMixin):
             where the value takes its maximum (only for shear stresses).
             Default is None.
         **mpl_kw: dict, Optional
-            Parameters to pass to :func:`sigmaepsilon.plotting.mpl.triplot`
+            Parameters to pass to :func:`~sigmaepsilon.mesh.plotting.mpl.triplot_mpl_data`
 
         Import the necessary stuff,
 

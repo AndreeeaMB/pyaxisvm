@@ -91,94 +91,11 @@ The ***AxisVM API Reference Guide*** is available in pdf format,  you can downlo
 
 The documentation of this library is available [***here***](https://axisvm.github.io/pyaxisvm-docs/).
 
-Please feel free to post issues and other questions at **PyAxisVM** Issues. This is the best place to post questions and code related to issues with this project.
+Please feel free to post issues and other questions at **PyAxisVM** Issues. This is the best place to post questions and code related to issues with this project. If you are not familiar with GitHub, you can also reach out to us through the usual channels, but if you are, GitHub is preferred.
 
 ## Dependencies
 
 You will need a local licenced copy of **AxisVM** version >= 13r2. To get a copy of **AxisVM**, please visit our [***homepage***](https://axisvm.eu/).
-
-## Getting Started
-
-### Register the AxisVM Type Library
-
-If this is not your first time using **AxisVM** through a COM interface on your machine, you should already have a registered type library and you can skip this step. Otherwise, follow the instructions at the beginning of the ***AxisVM API Reference Guide***.
-
-### Launch AxisVM
-
-The `axisvm.com.client` submodule implements various tools to handle the client side operations of creating a COM connection. Import the module and start a new application instance with the `start_AxisVM` method:
-
-```python
-from axisvm.com.client import start_AxisVM
-axapp = start_AxisVM(visible=True)
-```
-
-To test the connection, you can query the path of the executable being run by typing `axapp.FullExePath`.
-
-### Basic Usage
-
-If the connection is complete, create a new model and get an interface to it:
-
-```python
-modelId = axapp.Models.New()
-axmodel = axapp.Models.Item[modelId]
-```
-
-Every time you create a new **AxisVM** instance with the `start_AxisVM` command, an attempt is made to import the type library as a python module, or to generate one if necessary. The generated module is then accessible as `axisvm.com.tlb`.
-
-The next block of commands adds a line to the scene:
-
-```python
-from axisvm.com.tlb import lgtStraightLine, RLineGeomData
-n1 = axmodel.Nodes.Add(0, 0, 0)
-n2 = axmodel.Nodes.Add(1, 1, 1)
-l1 = axmodel.Lines.Add(n1, n2, lgtStraightLine, RLineGeomData())
-```
-
-Put **AxisVM** on top and scale model to fill up the current view:
-
-```python
-axapp.BringToFront()
-axmodel.FitInView()
-```
-
-At the end of your session, release the connection and close the application simply by typing
-
-```python
-axapp.UnLoadCOMClients()
-axapp.Quit()
-```
-
-Take a look at the jupyter notebooks in the [***examples***](https://github.com/AxisVM/pyaxisvm/tree/main/examples) folder of this repository for more use cases.
-
-## Tips and Tricks
-
-**PyAxisVM** wraps up the COM type library, allowing users to exploit the elegant and concise syntax that Python provides, while still leaving everything on the table for legacy code. If for example, we wanted to calculate areas of surface elements, the out of box solution would be something like
-
-```python
-areas = []
-for i in range(axmodel.Surfaces.Count):
-    areas.append(axmodel.Surfaces.Item[i+1].Area)
-```
-
-or using a list comprehension
-
-```python
-areas = [axmodel.Surfaces.Item[i+1].Area for i in range(axmodel.Surfaces.Count)]
-```
-
-With **PyAxisVM**, evaluation of single item properties over collections is as easy as
-
-```python
-areas = [s.Area for s in axmodel.Surfaces]
-```
-
-or simply
-
-```python
-areas = axmodel.Surfaces[:].Area
-```
-
-Click [***here***](https://github.com/AxisVM/pyaxisvm/blob/6abfebdfd26a76721836e1b490465d1f5a474a83/tips_and_tricks.md) to get a full overview about the pythonic usage of the library.
 
 ## License
 
